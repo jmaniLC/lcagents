@@ -310,21 +310,30 @@ class ConfigManager {
      * Create initial configuration with user input
      */
     async initializeConfig(options) {
+        console.log('DEBUG ConfigManager: Starting initializeConfig with options:', options);
         const defaultConfig = this.getDefaultConfig();
+        console.log('DEBUG ConfigManager: Got default config');
         // Apply user options
         if (options.enableGithub !== undefined && defaultConfig.github) {
             defaultConfig.github.integration = options.enableGithub;
+            console.log('DEBUG ConfigManager: Set GitHub integration to:', options.enableGithub);
         }
         if (options.enableCopilot !== undefined && defaultConfig.github) {
             defaultConfig.github.copilotFeatures = options.enableCopilot;
+            console.log('DEBUG ConfigManager: Set Copilot features to:', options.enableCopilot);
         }
         if (options.repository && defaultConfig.github) {
             defaultConfig.github.repository = options.repository;
+            console.log('DEBUG ConfigManager: Set repository to:', options.repository);
         }
         if (options.customPaths && defaultConfig.paths) {
             defaultConfig.paths = { ...defaultConfig.paths, ...options.customPaths };
+            console.log('DEBUG ConfigManager: Applied custom paths');
         }
-        return this.saveConfig(defaultConfig);
+        console.log('DEBUG ConfigManager: About to save config');
+        const result = await this.saveConfig(defaultConfig);
+        console.log('DEBUG ConfigManager: Save config result:', result);
+        return result;
     }
 }
 exports.ConfigManager = ConfigManager;

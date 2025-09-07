@@ -88,10 +88,15 @@ exports.initCommand = new commander_1.Command('init')
         }
         spinner.text = 'Setting up configuration...';
         // Initialize configuration
+        console.log('DEBUG: Starting configuration setup...');
         const configManager = new ConfigManager_1.ConfigManager(currentDir);
+        console.log('DEBUG: ConfigManager created');
         let githubEnabled = options.github !== false;
         let repository = '';
+        console.log('DEBUG: Interactive check - options.interactive:', options.interactive);
+        console.log('DEBUG: GitHub enabled:', githubEnabled);
         if (options.interactive !== false) {
+            console.log('DEBUG: Running interactive prompts...');
             const answers = await inquirer_1.default.prompt([
                 {
                     type: 'confirm',
@@ -115,12 +120,18 @@ exports.initCommand = new commander_1.Command('init')
             ]);
             githubEnabled = answers.enableGithub;
             repository = answers.repository || '';
+            console.log('DEBUG: Interactive setup completed');
         }
+        else {
+            console.log('DEBUG: Skipping interactive prompts (non-interactive mode)');
+        }
+        console.log('DEBUG: About to initialize config with:', { enableGithub: githubEnabled, repository });
         await configManager.initializeConfig({
             enableGithub: githubEnabled,
             enableCopilot: githubEnabled,
             repository
         });
+        console.log('DEBUG: Config initialization completed');
         if (githubEnabled) {
             spinner.text = 'Setting up GitHub integration...';
             const config = configManager.getConfig();
