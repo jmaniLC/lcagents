@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "url": "https://github.com/jmaniLC/lcagents.git",
+    "shortName": "lcagents",
+    "owner": "jmaniLC",
+    "name": "lcagents"
+  },
+  "author": {
+    "name": "Jayakrishnan Mani",
+    "email": "jmani@lendingclub.com"
+  },
+  "organization": "LendingClub",
+  "license": "UNLICENSED"
+}

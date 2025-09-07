@@ -1,0 +1,23 @@
+version: 1.0.0
+teamRoles:
+  test-role:
+    name: Test Role
+    description: A test role
+    responsibilities:
+      - Testing
+    agents:
+      - test-agent
+paths:
+  agents: .lcagents/agents
+  tasks: .lcagents/tasks
+  templates: .lcagents/templates
+  checklists: .lcagents/checklists
+  data: .lcagents/data
+  utils: .lcagents/utils
+  workflows: .lcagents/workflows
+  agent-teams: .lcagents/agent-teams
+github:
+  integration: true
+  copilotFeatures: true
+  repository: test/repo
+customization: {}
