@@ -60,18 +60,17 @@ exports.initCommand = new commander_1.Command('init')
             return;
         }
         spinner.text = 'Creating directory structure...';
-        // Create only bmad-core directory under .lcagents
-        const bmadCoreDir = path.join(lcagentsDir, 'bmad-core');
-        await fs.ensureDir(bmadCoreDir);
+        // Ensure .lcagents directory exists
+        await fs.ensureDir(lcagentsDir);
         spinner.text = 'Copying BMAD-Core resources...';
-        // Copy BMAD-Core resources from package to bmad-core folder
+        // Copy BMAD-Core resources from package directly to .lcagents folder
         const resourcesPath = path.join(__dirname, '../../resources');
         console.log('DEBUG: Looking for resources at:', resourcesPath);
         if (await fs.pathExists(resourcesPath)) {
-            console.log('DEBUG: Resources found, copying to bmad-core...');
-            // Copy all resources to bmad-core directory
-            await fs.copy(resourcesPath, bmadCoreDir);
-            console.log('DEBUG: All resources copied to bmad-core');
+            console.log('DEBUG: Resources found, copying to .lcagents...');
+            // Copy all resources directly to .lcagents directory
+            await fs.copy(resourcesPath, lcagentsDir);
+            console.log('DEBUG: All resources copied to .lcagents');
         }
         else {
             console.log('DEBUG: Resources not found at:', resourcesPath);
@@ -79,7 +78,7 @@ exports.initCommand = new commander_1.Command('init')
             const alternativePath = path.join(__dirname, '../../../resources');
             console.log('DEBUG: Trying alternative path:', alternativePath);
             if (await fs.pathExists(alternativePath)) {
-                await fs.copy(alternativePath, bmadCoreDir);
+                await fs.copy(alternativePath, lcagentsDir);
                 console.log('DEBUG: Copied from alternative path');
             }
         }
@@ -91,8 +90,8 @@ exports.initCommand = new commander_1.Command('init')
         console.log(chalk_1.default.cyan('  1. Set up alias for easy access:'));
         console.log(chalk_1.default.white("     alias lcagents='npx git+https://github.com/jmaniLC/lcagents.git'"));
         console.log(chalk_1.default.dim('     (Add this to your ~/.bashrc or ~/.zshrc)'));
-        console.log(chalk_1.default.cyan('  2. Explore available agents:'), 'ls .lcagents/bmad-core/agents/');
-        console.log(chalk_1.default.cyan('  3. View all resources:'), 'ls .lcagents/bmad-core/');
+        console.log(chalk_1.default.cyan('  2. Explore available agents:'), 'ls .lcagents/agents/');
+        console.log(chalk_1.default.cyan('  3. View all resources:'), 'ls .lcagents/');
         console.log();
         console.log(chalk_1.default.dim('For help: lcagents --help'));
     }
