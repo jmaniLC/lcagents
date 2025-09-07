@@ -68,6 +68,7 @@
   },
   "files": [
     "dist/**/*",
+    "config/**/*",
     "resources/**/*",
     "scripts/**/*",
     "README.md",

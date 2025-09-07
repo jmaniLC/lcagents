@@ -28,6 +28,15 @@ async function copyResources() {
       console.log('✅ Package.json copied to dist');
     }
     
+    // Copy config directory to dist
+    const configSource = path.join(__dirname, '../config');
+    const configDest = path.join(__dirname, '../dist/config');
+    
+    if (await fs.pathExists(configSource)) {
+      await fs.copy(configSource, configDest);
+      console.log('✅ Config directory copied to dist');
+    }
+    
     console.log('🎉 Resource copying completed');
   } catch (error) {
     console.error('❌ Error copying resources:', error);
