@@ -147,11 +147,14 @@ export const initCommand = new Command('init')
       console.log(chalk.green('🎉 Setup Complete!'));
       console.log();
       console.log('Next steps:');
-      console.log(chalk.cyan('  1. Explore available agents:'), 'ls .lcagents/agents/');
-      console.log(chalk.cyan('  2. Validate installation:'), 'npx lcagents validate');
-      console.log(chalk.cyan('  3. Generate documentation:'), 'npx lcagents docs');
+      console.log(chalk.cyan('  1. Set up alias for easy access:'));
+      console.log(chalk.white("     alias lcagents='npx git+https://github.com/jmaniLC/lcagents.git'"));
+      console.log(chalk.dim('     (Add this to your ~/.bashrc or ~/.zshrc)'));
+      console.log(chalk.cyan('  2. Explore available agents:'), 'ls .lcagents/agents/');
+      console.log(chalk.cyan('  3. Validate installation:'), 'lcagents validate');
+      console.log(chalk.cyan('  4. Generate documentation:'), 'lcagents docs');
       console.log();
-      console.log(chalk.dim('For help: npx lcagents --help'));
+      console.log(chalk.dim('For help: lcagents --help'));
       
     } catch (error) {
       spinner.fail('Failed to initialize LCAgents');
