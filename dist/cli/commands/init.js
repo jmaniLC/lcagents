@@ -97,8 +97,10 @@ exports.initCommand = new commander_1.Command('init')
         console.log('DEBUG: GitHub enabled:', githubEnabled);
         console.log('DEBUG: TTY available:', process.stdin.isTTY);
         console.log('DEBUG: Environment:', process.env['npm_execpath'] ? 'NPX' : 'Local');
-        // Force non-interactive mode if no TTY is available (common in NPX environments)
-        const shouldRunInteractive = options.interactive !== false && process.stdin.isTTY;
+        // Force non-interactive mode in NPX environments unless explicitly requested
+        const isNPXEnvironment = !!(process.env['npm_execpath'] || process.env['npm_command']);
+        const shouldRunInteractive = options.interactive === true || (!isNPXEnvironment && options.interactive !== false && process.stdin.isTTY);
+        console.log('DEBUG: Is NPX environment:', isNPXEnvironment);
         console.log('DEBUG: Should run interactive:', shouldRunInteractive);
         if (shouldRunInteractive) {
             console.log('DEBUG: Running interactive prompts...');
