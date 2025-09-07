@@ -97,10 +97,28 @@ exports.initCommand = new commander_1.Command('init')
         console.log('DEBUG: GitHub enabled:', githubEnabled);
         console.log('DEBUG: TTY available:', process.stdin.isTTY);
         console.log('DEBUG: Environment:', process.env['npm_execpath'] ? 'NPX' : 'Local');
-        // Force non-interactive mode in NPX environments unless explicitly requested
+        // Force non-interactive mode in NPX environments unless explicitly requested with --interactive
         const isNPXEnvironment = !!(process.env['npm_execpath'] || process.env['npm_command']);
-        const shouldRunInteractive = options.interactive === true || (!isNPXEnvironment && options.interactive !== false && process.stdin.isTTY);
+        const explicitlyInteractive = process.argv.includes('--interactive');
+        const explicitlyNonInteractive = process.argv.includes('--no-interactive');
+        let shouldRunInteractive = false;
+        if (explicitlyNonInteractive) {
+            shouldRunInteractive = false;
+        }
+        else if (explicitlyInteractive) {
+            shouldRunInteractive = true;
+        }
+        else if (isNPXEnvironment) {
+            // Default to non-interactive in NPX environments
+            shouldRunInteractive = false;
+        }
+        else {
+            // Local environment - default to interactive if TTY available
+            shouldRunInteractive = process.stdin.isTTY;
+        }
         console.log('DEBUG: Is NPX environment:', isNPXEnvironment);
+        console.log('DEBUG: Explicitly interactive:', explicitlyInteractive);
+        console.log('DEBUG: Explicitly non-interactive:', explicitlyNonInteractive);
         console.log('DEBUG: Should run interactive:', shouldRunInteractive);
         if (shouldRunInteractive) {
             console.log('DEBUG: Running interactive prompts...');
