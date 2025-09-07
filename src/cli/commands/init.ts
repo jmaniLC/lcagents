@@ -68,8 +68,14 @@ export const initCommand = new Command('init')
       
       console.log('DEBUG: Interactive check - options.interactive:', options.interactive);
       console.log('DEBUG: GitHub enabled:', githubEnabled);
+      console.log('DEBUG: TTY available:', process.stdin.isTTY);
+      console.log('DEBUG: Environment:', process.env['npm_execpath'] ? 'NPX' : 'Local');
       
-      if (options.interactive !== false) {
+      // Force non-interactive mode if no TTY is available (common in NPX environments)
+      const shouldRunInteractive = options.interactive !== false && process.stdin.isTTY;
+      console.log('DEBUG: Should run interactive:', shouldRunInteractive);
+      
+      if (shouldRunInteractive) {
         console.log('DEBUG: Running interactive prompts...');
         const answers = await inquirer.prompt([
           {
@@ -95,7 +101,7 @@ export const initCommand = new Command('init')
         repository = answers.repository || '';
         console.log('DEBUG: Interactive setup completed');
       } else {
-        console.log('DEBUG: Skipping interactive prompts (non-interactive mode)');
+        console.log('DEBUG: Skipping interactive prompts (non-interactive mode or no TTY)');
       }
       
       console.log('DEBUG: About to initialize config with:', { enableGithub: githubEnabled, repository });
