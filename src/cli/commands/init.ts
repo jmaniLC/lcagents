@@ -49,11 +49,87 @@ export const initCommand = new Command('init')
       
       spinner.text = 'Copying BMAD-Core resources...';
       
-      // TODO: Copy BMAD-Core resources from package
-      // This would copy from node_modules/@lendingclub/lcagents/resources
-      const packageResourcesPath = path.join(__dirname, '../../../resources');
-      if (await fs.pathExists(packageResourcesPath)) {
-        await fs.copy(packageResourcesPath, lcagentsDir);
+      // Copy BMAD-Core resources from package
+      const resourcesPath = path.join(__dirname, '../../resources');
+      console.log('DEBUG: Looking for resources at:', resourcesPath);
+      
+      if (await fs.pathExists(resourcesPath)) {
+        console.log('DEBUG: Resources found, copying...');
+        
+        // Copy agents
+        const agentsSource = path.join(resourcesPath, 'agents');
+        const agentsTarget = path.join(lcagentsDir, 'agents');
+        if (await fs.pathExists(agentsSource)) {
+          await fs.copy(agentsSource, agentsTarget);
+          console.log('DEBUG: Copied agents');
+        }
+        
+        // Copy tasks  
+        const tasksSource = path.join(resourcesPath, 'tasks');
+        const tasksTarget = path.join(lcagentsDir, 'tasks');
+        if (await fs.pathExists(tasksSource)) {
+          await fs.copy(tasksSource, tasksTarget);
+          console.log('DEBUG: Copied tasks');
+        }
+        
+        // Copy templates
+        const templatesSource = path.join(resourcesPath, 'templates');
+        const templatesTarget = path.join(lcagentsDir, 'templates');
+        if (await fs.pathExists(templatesSource)) {
+          await fs.copy(templatesSource, templatesTarget);
+          console.log('DEBUG: Copied templates');
+        }
+        
+        // Copy checklists
+        const checklistsSource = path.join(resourcesPath, 'checklists');
+        const checklistsTarget = path.join(lcagentsDir, 'checklists');
+        if (await fs.pathExists(checklistsSource)) {
+          await fs.copy(checklistsSource, checklistsTarget);
+          console.log('DEBUG: Copied checklists');
+        }
+        
+        // Copy agent-teams
+        const teamsSource = path.join(resourcesPath, 'agent-teams');
+        const teamsTarget = path.join(lcagentsDir, 'agent-teams');
+        if (await fs.pathExists(teamsSource)) {
+          await fs.copy(teamsSource, teamsTarget);
+          console.log('DEBUG: Copied agent-teams');
+        }
+        
+        // Copy data
+        const dataSource = path.join(resourcesPath, 'data');
+        const dataTarget = path.join(lcagentsDir, 'data');
+        if (await fs.pathExists(dataSource)) {
+          await fs.copy(dataSource, dataTarget);
+          console.log('DEBUG: Copied data');
+        }
+        
+        // Copy workflows
+        const workflowsSource = path.join(resourcesPath, 'workflows');
+        const workflowsTarget = path.join(lcagentsDir, 'workflows');
+        if (await fs.pathExists(workflowsSource)) {
+          await fs.copy(workflowsSource, workflowsTarget);
+          console.log('DEBUG: Copied workflows');
+        }
+        
+        // Copy utils
+        const utilsSource = path.join(resourcesPath, 'utils');
+        const utilsTarget = path.join(lcagentsDir, 'utils');
+        if (await fs.pathExists(utilsSource)) {
+          await fs.copy(utilsSource, utilsTarget);
+          console.log('DEBUG: Copied utils');
+        }
+        
+        console.log('DEBUG: Resources copied successfully');
+      } else {
+        console.log('DEBUG: Resources not found at:', resourcesPath);
+        // Fallback: try alternative paths
+        const alternativePath = path.join(__dirname, '../../../resources');
+        console.log('DEBUG: Trying alternative path:', alternativePath);
+        if (await fs.pathExists(alternativePath)) {
+          await fs.copy(alternativePath, path.join(lcagentsDir, 'bmad-core'));
+          console.log('DEBUG: Copied from alternative path');
+        }
       }
       
       spinner.text = 'Setting up configuration...';
