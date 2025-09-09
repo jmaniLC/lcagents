@@ -189,13 +189,13 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
             // Step 4: Create layered directory structure
             spinner.text = 'Creating layered architecture...';
             await layerManager.createLayeredStructure();
-            // Step 5: Create backward compatibility resolution
+            // Step 5: Set active core system (before virtual resolution setup)
+            spinner.text = 'Configuring core system...';
+            await coreSystemManager.switchCoreSystem(coreSystemName, 'Initial installation');
+            // Step 6: Create backward compatibility resolution (after active core is set)
             spinner.text = 'Setting up backward compatibility...';
             await layerManager.createVirtualResolutionSystem(coreSystemName);
         }
-        // Step 6: Set active core system
-        spinner.text = 'Configuring core system...';
-        await coreSystemManager.switchCoreSystem(coreSystemName, 'Initial installation');
         // Step 7: Initialize configuration
         spinner.text = 'Initializing configuration...';
         await configManager.initializeConfig({
@@ -207,7 +207,7 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
         return {
             success: true,
             coreSystem: coreSystemName,
-            installedPath: path.join(lcagentsDir, 'core', coreSystemName),
+            installedPath: path.join(lcagentsDir, 'core', `.${coreSystemName}`),
             layersCreated: ['Core', 'Organization', 'Pod Custom', 'Runtime'],
             configurationPath: path.join(lcagentsDir, 'config.yaml'),
             warnings: []
