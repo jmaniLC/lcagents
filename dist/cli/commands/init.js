@@ -191,7 +191,7 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
             await layerManager.createLayeredStructure(coreSystemName);
             // Step 5: Create backward compatibility resolution
             spinner.text = 'Setting up backward compatibility...';
-            await layerManager.createBackwardCompatibilityResolution(coreSystemName);
+            await layerManager.createVirtualResolutionSystem(coreSystemName);
         }
         // Step 6: Set active core system
         spinner.text = 'Configuring core system...';

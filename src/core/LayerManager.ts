@@ -506,55 +506,157 @@ The agent has deep knowledge of modern data engineering practices and can provid
   }
 
   /**
-   * Create backward compatibility symlinks/resolved resources
+   * Build resolution mapping for all resources in the system
    */
-  async createBackwardCompatibilityResolution(coreSystemName: string): Promise<void> {
-    // DO NOT COPY FILES - this violates layered architecture
-    // Instead, create symbolic links for backward compatibility ONLY
-    
-    const coreSystemPath = path.join(this.lcagentsPath, 'core', coreSystemName);
-    
+  async buildResolutionMap(coreSystemName: string): Promise<Record<string, string>> {
+    const resolutionMap: Record<string, string> = {};
     const resourceTypes = [
       'agents', 'tasks', 'templates', 'checklists', 
       'data', 'utils', 'workflows', 'agent-teams'
     ];
 
     for (const resourceType of resourceTypes) {
-      const sourcePath = path.join(coreSystemPath, resourceType);
-      const targetPath = path.join(this.lcagentsPath, resourceType);
-
-      if (await fs.pathExists(sourcePath)) {
-        // Remove existing directory if it exists
-        if (await fs.pathExists(targetPath)) {
-          await fs.remove(targetPath);
+      // Check custom layer first (highest priority)
+      const customDir = path.join(this.lcagentsPath, 'custom', resourceType);
+      if (await fs.pathExists(customDir)) {
+        const customFiles = await fs.readdir(customDir);
+        for (const file of customFiles) {
+          const key = `${resourceType}/${file}`;
+          resolutionMap[key] = path.join('custom', resourceType, file);
         }
-        
-        // Create symbolic link for backward compatibility
-        // This ensures tools looking in root .lcagents/ can still find resources
-        // but they're actually resolved from the layered structure
-        await fs.ensureSymlink(sourcePath, targetPath);
+      }
+
+      // Check org layer
+      const orgDir = path.join(this.lcagentsPath, 'org', resourceType);
+      if (await fs.pathExists(orgDir)) {
+        const orgFiles = await fs.readdir(orgDir);
+        for (const file of orgFiles) {
+          const key = `${resourceType}/${file}`;
+          // Only add if not already resolved from custom layer
+          if (!resolutionMap[key]) {
+            resolutionMap[key] = path.join('org', resourceType, file);
+          }
+        }
+      }
+
+      // Check core layer (lowest priority)
+      const coreDir = path.join(this.lcagentsPath, 'core', coreSystemName, resourceType);
+      if (await fs.pathExists(coreDir)) {
+        const coreFiles = await fs.readdir(coreDir);
+        for (const file of coreFiles) {
+          const key = `${resourceType}/${file}`;
+          // Only add if not already resolved from custom or org layers
+          if (!resolutionMap[key]) {
+            resolutionMap[key] = path.join('core', coreSystemName, resourceType, file);
+          }
+        }
       }
     }
 
-    // Create config directory with symbolic links, not copies
+    return resolutionMap;
+  }
+
+  /**
+   * Create virtual resolution system (no physical files at root level)
+   * Resources are accessed through LayerManager.resolve() API only
+   */
+  async createVirtualResolutionSystem(coreSystemName: string): Promise<void> {
+    // NO symbolic links or file copying
+    // Resources exist only in their respective layers
+    // Access is provided through virtual resolution API
+    
+    console.log(`🔧 Virtual Resolution: Core system '${coreSystemName}' resources available via LayerManager API`);
+    console.log(`📁 Physical location: ${path.join(this.lcagentsPath, 'core', coreSystemName)}`);
+    console.log(`🔍 Access pattern: LayerManager.resolveResourcePath(type, filename)`);
+    
+    // Create resolution mapping for runtime cache
+    const resolutionMap = await this.buildResolutionMap(coreSystemName);
+    const runtimeDir = path.join(this.lcagentsPath, 'runtime');
+    await fs.ensureDir(runtimeDir);
+    
+    // Cache the resolution map for performance
+    await fs.writeJson(path.join(runtimeDir, 'resource-map.json'), resolutionMap, { spaces: 2 });
+    
+    // Create config directory and copy (not link) essential config files
     const configDir = path.join(this.lcagentsPath, 'config');
     await fs.ensureDir(configDir);
     
-    // Create symbolic link to core-config.yaml if it exists
-    const coreConfigSource = path.join(coreSystemPath, 'core-config.yaml');
+    // Copy core-config.yaml if it exists (this is configuration, not a resource)
+    const coreConfigSource = path.join(this.lcagentsPath, 'core', coreSystemName, 'core-config.yaml');
     const coreConfigTarget = path.join(configDir, 'core-config.yaml');
     
     if (await fs.pathExists(coreConfigSource)) {
-      // Remove existing file/link
-      if (await fs.pathExists(coreConfigTarget)) {
-        await fs.remove(coreConfigTarget);
-      }
-      // Create symbolic link
-      await fs.ensureSymlink(coreConfigSource, coreConfigTarget);
+      await fs.copy(coreConfigSource, coreConfigTarget);
+    }
+  }
+
+  /**
+   * Get the physical file path for a resource using virtual resolution
+   * This is the main API for accessing resources in the layered architecture
+   */
+  async getResourcePath(resourceType: string, resourceName: string): Promise<string | null> {
+    return await this.resolveResourcePath(resourceType, resourceName);
+  }
+
+  /**
+   * Read a resource file content using virtual resolution
+   */
+  async readResource(resourceType: string, resourceName: string): Promise<string | null> {
+    const resourcePath = await this.getResourcePath(resourceType, resourceName);
+    
+    if (resourcePath && await fs.pathExists(resourcePath)) {
+      return await fs.readFile(resourcePath, 'utf-8');
+    }
+    
+    return null;
+  }
+
+  /**
+   * List all available resources of a given type across all layers
+   */
+  async listResources(resourceType: string): Promise<Array<{ name: string; source: string; path: string }>> {
+    const resources: Array<{ name: string; source: string; path: string }> = [];
+    const seen = new Set<string>();
+    
+    // Get active core system
+    const activeCore = await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCore) {
+      return [];
     }
 
-    // Note: This is temporary backward compatibility only
-    // After LCA-004, all resource access should go through LayerManager resolution
+    const layers = [
+      { name: 'custom', path: path.join(this.lcagentsPath, 'custom', resourceType) },
+      { name: 'org', path: path.join(this.lcagentsPath, 'org', resourceType) },
+      { name: 'core', path: path.join(this.lcagentsPath, 'core', activeCore, resourceType) }
+    ];
+
+    // Check each layer in precedence order
+    for (const layer of layers) {
+      if (await fs.pathExists(layer.path)) {
+        const files = await fs.readdir(layer.path);
+        
+        for (const file of files) {
+          if (!seen.has(file)) {
+            seen.add(file);
+            resources.push({
+              name: file,
+              source: layer.name,
+              path: path.join(layer.path, file)
+            });
+          }
+        }
+      }
+    }
+
+    return resources;
+  }
+
+  /**
+   * Check if a resource exists using virtual resolution
+   */
+  async resourceExists(resourceType: string, resourceName: string): Promise<boolean> {
+    const resourcePath = await this.getResourcePath(resourceType, resourceName);
+    return resourcePath ? await fs.pathExists(resourcePath) : false;
   }
 
   /**
@@ -665,7 +767,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
     // Create new layered structure
     await this.createLayeredStructure(coreSystemName);
 
-    // Restore backward compatibility
-    await this.createBackwardCompatibilityResolution(coreSystemName);
+    // Set up virtual resolution system (no symlinks)
+    await this.createVirtualResolutionSystem(coreSystemName);
   }
 }

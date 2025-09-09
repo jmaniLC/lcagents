@@ -127,7 +127,7 @@ coreCommand
       }
 
       // Update backward compatibility resolution
-      await layerManager.createBackwardCompatibilityResolution(name);
+      await layerManager.createVirtualResolutionSystem(name);
 
       spinner.succeed(`Successfully switched to ${name}`);
       
