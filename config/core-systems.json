@@ -1,0 +1,110 @@
+{
+  "coreSystems": [
+    {
+      "name": "bmad-core",
+      "version": "4.45.0", 
+      "description": "Original BMAD-Core agent system with proven workflows",
+      "type": "bundled",
+      "source": {
+        "type": "bundled",
+        "path": "resources"
+      },
+      "agentCount": 11,
+      "features": [
+        "Complete agent workflow system",
+        "24+ task workflows", 
+        "13+ document templates",
+        "6+ validation checklists",
+        "Knowledge base and utilities",
+        "Proven BMAD methodology"
+      ],
+      "compatibility": {
+        "lcagentsMinVersion": "1.0.0",
+        "targetAudience": "General purpose development teams",
+        "industries": ["Technology", "Software Development", "Product Management"]
+      },
+      "isDefault": true,
+      "installation": {
+        "requiresInternet": false,
+        "estimatedTime": "< 1 minute",
+        "diskSpace": "< 5MB"
+      }
+    },
+    {
+      "name": "enterprise-core",
+      "version": "1.0.0",
+      "description": "Enterprise-grade agent system with compliance and governance features",
+      "type": "registry",
+      "source": {
+        "type": "registry",
+        "package": "@lendingclub/enterprise-agents",
+        "version": "^1.0.0"
+      },
+      "agentCount": 15,
+      "features": [
+        "Compliance-focused workflows",
+        "Enterprise governance templates",
+        "Audit trail capabilities",
+        "Role-based access controls",
+        "Industry-specific agents"
+      ],
+      "compatibility": {
+        "lcagentsMinVersion": "1.0.0",
+        "targetAudience": "Enterprise teams with compliance requirements",
+        "industries": ["Financial Services", "Healthcare", "Government"]
+      },
+      "isDefault": false,
+      "installation": {
+        "requiresInternet": true,
+        "estimatedTime": "2-3 minutes",
+        "diskSpace": "< 10MB"
+      }
+    },
+    {
+      "name": "minimal-core", 
+      "version": "1.0.0",
+      "description": "Lightweight agent system for simple projects and quick prototyping",
+      "type": "github",
+      "source": {
+        "type": "github",
+        "url": "https://github.com/jmaniLC/lcagents-minimal-core.git",
+        "ref": "main"
+      },
+      "agentCount": 5,
+      "features": [
+        "Essential agents only",
+        "Streamlined workflows",
+        "Minimal templates",
+        "Quick setup and deployment"
+      ],
+      "compatibility": {
+        "lcagentsMinVersion": "1.0.0",
+        "targetAudience": "Small teams and individual developers",
+        "industries": ["Startups", "Freelancers", "Personal Projects"]
+      },
+      "isDefault": false,
+      "installation": {
+        "requiresInternet": true,
+        "estimatedTime": "1-2 minutes", 
+        "diskSpace": "< 2MB"
+      }
+    }
+  ],
+  "registryEndpoints": [
+    {
+      "name": "npm-registry",
+      "url": "https://registry.npmjs.org",
+      "type": "npm"
+    },
+    {
+      "name": "lcagents-registry",
+      "url": "https://registry.lcagents.com",
+      "type": "lcagents"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-09T00:00:00Z",
+    "schemaVersion": "1.0"
+  }
+}

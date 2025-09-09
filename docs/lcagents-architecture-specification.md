@@ -1,8 +1,19 @@
-# LCAgents (LendingClub Agents) Architecture Specification
+&&&&
+
+# LCAgents (LendingClub Agents) Architecture Specification v1.1
 
 ## Overview
 
-LCAgents is a **role-based AI agent orchestration framework** that provides specialized personas for different team roles (PM, Developer, QA, Architect, etc.) with standardized workflows and templates. The system is designed to work with GitHub Copilot across all supported IDEs.
+LCAgents is a **layered, role-based AI agent orchestration framework** that provides specialized personas for different team roles (PM, Developer, QA, Architect, etc.) with standardized workflows and templates. The system supports multi-pod deployments with customizable agents while maintaining multiple switchable core agent systems. The system is designed to work with GitHub Copilot across all supported IDEs.
+
+### Version 1.1 Key Features
+- **Layered Architecture**: Separates core systems, organization standards, and pod-specific customizations
+- **Switchable Core Systems**: Support for multiple core agent systems (BMAD-Core, Enterprise, etc.)
+- **Agent Override System**: Allows pods to customize existing agents without modifying any core system
+- **Custom Agent Framework**: Enables creation of pod-specific agents while inheriting from any core system
+- **Safe Upgrade Path**: Core system updates don't break pod customizations
+- **Safe Core Switching**: Switch between core systems without losing customizations
+- **Resource Resolution**: Intelligent layer-based resource lookup with core system awareness
 
 ## Installation and Setup
 
@@ -26,91 +37,56 @@ your-project/
 ├── .github/                 # GitHub configuration
 │   └── copilot-instructions.md  # GitHub Copilot behavior instructions
 ├── .lcagents/               # Agent configurations and runtime resources
+│   ├── core/               # Core agent systems (switchable)
+│   │   ├── bmad-core/      # BMAD-Core agent system (default)
+│   │   │   ├── agents/     # Original BMAD agents (immutable)
+│   │   │   ├── tasks/      # Original BMAD tasks
+│   │   │   ├── templates/  # Original BMAD templates
+│   │   │   ├── checklists/ # Original BMAD checklists
+│   │   │   ├── data/       # Original BMAD data
+│   │   │   ├── utils/      # Original BMAD utilities
+│   │   │   ├── workflows/  # Original BMAD workflows
+│   │   │   ├── agent-teams/ # Original BMAD agent teams
+│   │   │   └── version.json # BMAD-Core version tracking
+│   │   ├── alternative-core/ # Example: Alternative agent system
+│   │   │   ├── agents/     # Alternative core agents
+│   │   │   ├── tasks/      # Alternative core tasks
+│   │   │   └── version.json # Alternative system version
+│   │   └── active-core.json # Configuration for active core system
+│   ├── org/                # Organization-wide customizations
+│   │   ├── agents/         # Org-specific agent overrides
+│   │   ├── templates/      # Org-specific templates
+│   │   ├── policies/       # Company policies & standards
+│   │   ├── workflows/      # Org-specific workflows
+│   │   └── config/
+│   │       ├── standards.yaml    # Org coding standards
+│   │       └── compliance.yaml   # Compliance requirements
+│   ├── custom/             # Pod-specific customizations
+│   │   ├── agents/         # Pod custom/override agents
+│   │   │   ├── custom-agent.md         # New pod-specific agents
+│   │   │   └── overrides/              # Agent behavior overrides
+│   │   │       ├── pm-overrides.yaml   # PM agent customizations
+│   │   │       └── dev-overrides.yaml  # Dev agent customizations
+│   │   ├── templates/      # Pod-specific templates
+│   │   ├── tasks/          # Pod-specific tasks
+│   │   ├── workflows/      # Pod-specific workflows
+│   │   └── config/
+│   │       ├── pod-config.yaml    # Pod-specific settings
+│   │       └── team-roles.yaml    # Pod team structure
+│   ├── runtime/            # Dynamic runtime resources
+│   │   ├── merged-agents/  # Resolved agent definitions
+│   │   ├── cache/          # Performance cache
+│   │   └── logs/           # Runtime logs
 │   ├── docs/               # All LCAgents generated documents (PRDs, stories, etc.)
-│   ├── agents/             # Agent markdown files (complete BMAD-Core agent set)
-│   │   ├── pm.md           # Product Manager agent
-│   │   ├── dev.md          # Developer agent
-│   │   ├── qa.md           # QA Engineer agent
-│   │   ├── architect.md    # Architect agent
-│   │   ├── analyst.md      # Business Analyst agent
-│   │   ├── em.md           # Engineering Manager agent
-│   │   ├── po.md           # Product Owner agent
-│   │   ├── sm.md           # Scrum Master agent
-│   │   ├── ux-expert.md    # UX Expert agent
-│   │   ├── bmad-master.md  # Universal agent
-│   │   └── bmad-orchestrator.md # Orchestration agent
+│   ├── agents/             # Active agent configurations (resolved from layers)
 │   ├── agent-teams/        # Pre-configured agent team bundles
-│   │   ├── team-all.yaml   # All agents bundle
-│   │   ├── team-fullstack.yaml # Full-stack development team
-│   │   ├── team-ide-minimal.yaml # Minimal IDE team
-│   │   └── team-no-ui.yaml # Backend-focused team
-│   ├── templates/          # All BMAD-Core compatible templates
-│   │   ├── architecture-tmpl.yaml
-│   │   ├── brownfield-architecture-tmpl.yaml
-│   │   ├── brownfield-prd-tmpl.yaml
-│   │   ├── competitor-analysis-tmpl.yaml
-│   │   ├── front-end-architecture-tmpl.yaml
-│   │   ├── front-end-spec-tmpl.yaml
-│   │   ├── fullstack-architecture-tmpl.yaml
-│   │   ├── market-research-tmpl.yaml
-│   │   ├── prd-tmpl.yaml
-│   │   ├── project-brief-tmpl.yaml
-│   │   ├── qa-gate-tmpl.yaml
-│   │   ├── story-tmpl.yaml
-│   │   └── brainstorming-output-tmpl.yaml
-│   ├── tasks/              # All executable task workflows
-│   │   ├── advanced-elicitation.md
-│   │   ├── apply-qa-fixes.md
-│   │   ├── brownfield-create-epic.md
-│   │   ├── brownfield-create-story.md
-│   │   ├── correct-course.md
-│   │   ├── create-brownfield-story.md
-│   │   ├── create-deep-research-prompt.md
-│   │   ├── create-doc.md
-│   │   ├── create-next-story.md
-│   │   ├── document-project.md
-│   │   ├── execute-checklist.md
-│   │   ├── facilitate-brainstorming-session.md
-│   │   ├── generate-ai-frontend-prompt.md
-│   │   ├── index-docs.md
-│   │   ├── kb-mode-interaction.md
-│   │   ├── nfr-assess.md
-│   │   ├── qa-gate.md
-│   │   ├── review-story.md
-│   │   ├── risk-profile.md
-│   │   ├── shard-doc.md
-│   │   ├── test-design.md
-│   │   ├── trace-requirements.md
-│   │   └── validate-next-story.md
-│   ├── checklists/         # Validation checklists
-│   │   ├── architect-checklist.md
-│   │   ├── change-checklist.md
-│   │   ├── pm-checklist.md
-│   │   ├── po-master-checklist.md
-│   │   ├── story-dod-checklist.md
-│   │   └── story-draft-checklist.md
-│   ├── data/               # Agent context and knowledge base files
-│   │   ├── bmad-kb.md      # Complete BMAD knowledge base
-│   │   ├── brainstorming-techniques.md
-│   │   ├── elicitation-methods.md
-│   │   ├── technical-preferences.md
-│   │   ├── test-levels-framework.md
-│   │   └── test-priorities-matrix.md
-│   ├── utils/              # Utility files and documentation
-│   │   ├── bmad-doc-template.md
-│   │   └── workflow-management.md
-│   ├── workflows/          # Process definitions and workflow files
-│   │   ├── brownfield-fullstack.yaml
-│   │   ├── brownfield-service.yaml
-│   │   ├── brownfield-ui.yaml
-│   │   ├── greenfield-fullstack.yaml
-│   │   ├── greenfield-service.yaml
-│   │   └── greenfield-ui.yaml
-│   └── config/             # Settings and standards
-│       ├── team-roles.yaml # Role-based access configuration
-│       └── core-config.yaml # Core project configuration
-│   ├── workflows/          # Process definitions
-│   └── config/             # Settings and standards
+│   ├── templates/          # Active templates (resolved from layers)
+│   ├── tasks/              # Active executable task workflows (resolved from layers)
+│   ├── checklists/         # Active validation checklists (resolved from layers)
+│   ├── data/               # Active agent context and knowledge base files (resolved from layers)
+│   ├── utils/              # Active utility files and documentation (resolved from layers)
+│   ├── workflows/          # Active process definitions (resolved from layers)
+│   └── config/             # Active settings and standards (resolved from layers)
 │       └── team-roles.yaml # Role-based access configuration
 ├── .lcagents-config.json   # Project configuration
 ├── README-lcagents.md      # Quick start guide
@@ -137,6 +113,1073 @@ rm -rf .lcagents .lcagents-config.json README-lcagents.md
 
 **Note**: The automated uninstall command removes all LCAgents files and cleans up the `.gitignore` entries automatically.
 
+## Layered Architecture Design
+
+### Multi-Pod Architecture Overview
+
+LCAgents v1.1 implements a **three-layer architecture** with **switchable core agent systems** that enables multiple pods to customize their workflows while maintaining a stable core system:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Pod-Specific Layer                       │
+│  .lcagents/custom/  (pod customizations, new agents)       │
+├─────────────────────────────────────────────────────────────┤
+│                Organization Standards Layer                 │
+│  .lcagents/org/     (company-wide standards & policies)    │
+├─────────────────────────────────────────────────────────────┤
+│                 Switchable Core Systems Layer              │
+│  .lcagents/core/    (pluggable core agent systems)        │
+│  ├── bmad-core/    (default: BMAD-Core system)             │
+│  ├── alt-core/     (alternative: Other agent systems)      │
+│  └── active-core.json (configuration for active system)    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Descriptions
+
+#### 1. Switchable Core Systems Layer (`.lcagents/core/`)
+- **Pluggable Architecture**: Support for multiple core agent systems
+- **Default System**: BMAD-Core in `.lcagents/core/bmad-core/` (read-only, immutable)
+- **Alternative Systems**: Additional core systems in dedicated subfolders
+- **Runtime Selection**: Active core system configured via `active-core.json`
+- **Versioned**: Each core system tracked with individual `version.json` files
+- **Complete Isolation**: Core systems are completely isolated from each other
+- **Safe Switching**: Ability to switch between core systems without data loss
+
+##### Core System Structure
+Each core system follows the same internal structure:
+```
+.lcagents/core/{system-name}/
+├── agents/         # Core agents for this system
+├── tasks/          # Core tasks and workflows
+├── templates/      # Core document templates
+├── checklists/     # Core validation checklists
+├── data/           # Core knowledge base and context
+├── utils/          # Core utility files
+├── workflows/      # Core process definitions
+├── agent-teams/    # Core agent team configurations
+└── version.json    # Version tracking for this core system
+```
+
+##### Active Core Configuration
+```json
+// .lcagents/core/active-core.json
+{
+  "activeCore": "bmad-core",
+  "availableCores": [
+    {
+      "name": "bmad-core",
+      "version": "4.45.0",
+      "description": "Original BMAD-Core agent system",
+      "path": "bmad-core/"
+    },
+    {
+      "name": "enterprise-core", 
+      "version": "1.2.0",
+      "description": "Enterprise-specific agent system",
+      "path": "enterprise-core/"
+    }
+  ],
+  "switchHistory": [
+    {
+      "from": "bmad-core",
+      "to": "enterprise-core",
+      "timestamp": "2025-09-09T10:30:00Z",
+      "reason": "Switched to enterprise agents for compliance"
+    }
+  ]
+}
+```
+
+#### 2. Organization Standards Layer (`.lcagents/org/`)
+- **Company-wide**: Applied across all pods in the organization
+- **Policies**: Compliance requirements, coding standards, workflows
+- **Governance**: Centralized control over organizational standards
+- **Optional**: May not exist if organization doesn't require standardization
+
+#### 3. Pod-Specific Layer (`.lcagents/custom/`)
+- **Team-focused**: Customizations specific to individual pods/teams
+- **Agent Overrides**: Modify existing agent behavior without changing core
+- **Custom Agents**: Create entirely new agents for pod-specific needs
+- **Templates**: Pod-specific document templates and workflows
+
+### Agent Resolution and Merging
+
+#### Resource Resolution Priority
+```typescript
+// Resolution order (highest to lowest priority)
+const RESOLUTION_ORDER = [
+  '.lcagents/custom/',           // Pod-specific (highest priority)
+  '.lcagents/org/',              // Organization-wide
+  '.lcagents/core/{active-core}/' // Active core system baseline (lowest priority)
+];
+
+// Core system resolution
+class CoreSystemResolver {
+  async getActiveCoreSystem(): Promise<string> {
+    const config = await this.loadActiveCoreConfig();
+    return config.activeCore; // e.g., "bmad-core" or "enterprise-core"
+  }
+  
+  async getActiveCoreBasePath(): Promise<string> {
+    const activeCore = await this.getActiveCoreSystem();
+    return `.lcagents/core/${activeCore}/`;
+  }
+  
+  async resolveResource(resourceType: string, resourceName: string): Promise<string> {
+    const coreBasePath = await this.getActiveCoreBasePath();
+    return `${coreBasePath}${resourceType}/${resourceName}`;
+  }
+}
+```
+
+#### Agent Override System
+Pods can customize existing agents using override files:
+
+```yaml
+# .lcagents/custom/agents/overrides/pm-overrides.yaml
+commands:
+  add:
+    - name: "*create-spike-story"
+      description: "Create technical spike story (pod-specific workflow)"
+      workflow: "custom/tasks/create-spike-story.md"
+  
+  modify:
+    "*create-prd":
+      description: "Create PRD with pod-specific template"
+      workflow: "custom/tasks/create-pod-prd.md"
+  
+  remove:
+    - "*yolo"  # Remove commands not suitable for this pod
+
+persona:
+  core_principles:
+    - "Security-first approach"  # Add pod-specific principle
+    - "Data privacy compliance"  # Add pod-specific principle
+
+dependencies:
+  add:
+    - "custom/templates/pod-prd-tmpl.yaml"
+    - "custom/checklists/security-checklist.md"
+```
+
+#### Custom Agent Creation
+Pods can create entirely new agents that inherit core capabilities:
+
+```yaml
+# .lcagents/custom/agents/data-engineer.md
+agent:
+  name: "Data Engineer"
+  id: "data-engineer"
+  title: "Data Pipeline Engineer"
+  icon: "🔄"
+  whenToUse: "For data pipeline design, ETL processes, and data quality tasks"
+  inherits: "core/dev"  # Inherit base developer capabilities
+
+persona:
+  role: "Data Engineer focused on data pipelines and quality"
+  style: "Technical and data-focused"
+  identity: "Expert in data architecture and pipeline optimization"
+  core_principles:
+    - "Data quality is paramount"
+    - "Scalable and maintainable pipelines"
+    - "Monitoring and observability first"
+
+commands:
+  add:
+    - name: "*design-pipeline"
+      description: "Design data pipeline architecture"
+      workflow: "custom/tasks/design-data-pipeline.md"
+    - name: "*validate-data-quality"
+      description: "Validate data quality metrics"
+      workflow: "custom/tasks/validate-data-quality.md"
+    - name: "*create-etl-story"
+      description: "Create ETL development story"
+      workflow: "custom/tasks/create-etl-story.md"
+```
+
+### Core System Management
+
+#### Switching Between Core Systems
+
+Teams can switch between different core agent systems based on their needs:
+
+```bash
+# List available core systems
+@lcagents core list
+Available Core Systems:
+├── bmad-core (v4.45.0) - Original BMAD-Core agents [ACTIVE]
+├── enterprise-core (v1.2.0) - Enterprise compliance agents
+└── minimal-core (v1.0.0) - Lightweight agent set
+
+# Switch to a different core system  
+@lcagents core switch enterprise-core --reason "compliance requirements"
+
+# Validate switch impact
+@lcagents core validate-switch enterprise-core
+Switch Impact Analysis:
+├── Compatible agents: 8/11
+├── Missing agents: qa-automation, performance-tester, security-scanner
+├── New agents: compliance-officer, audit-agent, risk-assessor
+├── Override compatibility: ✅ All overrides compatible
+└── Recommendation: Safe to switch
+
+# Install additional core system
+@lcagents core install minimal-core --from-registry
+```
+
+#### Core System Configuration
+
+```typescript
+// Core system resolver implementation
+class CoreSystemManager {
+  private readonly CORE_CONFIG_PATH = '.lcagents/core/active-core.json';
+  
+  async switchCoreSystem(newCore: string, reason?: string): Promise<void> {
+    // 1. Validate new core system exists
+    await this.validateCoreSystem(newCore);
+    
+    // 2. Check compatibility with current customizations
+    const compatibility = await this.checkCompatibility(newCore);
+    if (!compatibility.isCompatible) {
+      throw new Error(`Incompatible switch: ${compatibility.issues.join(', ')}`);
+    }
+    
+    // 3. Backup current configuration
+    await this.backupCurrentConfig();
+    
+    // 4. Update active core configuration
+    await this.updateActiveCoreConfig(newCore, reason);
+    
+    // 5. Rebuild runtime cache with new core
+    await this.rebuildRuntimeCache();
+    
+    // 6. Validate all agents still work
+    await this.validateAgentCompatibility();
+  }
+  
+  async installCoreSystem(coreName: string, source: CoreSystemSource): Promise<void> {
+    const targetPath = `.lcagents/core/${coreName}/`;
+    
+    switch (source.type) {
+      case 'registry':
+        await this.installFromRegistry(coreName, targetPath);
+        break;
+      case 'github':
+        await this.installFromGitHub(source.url, targetPath);
+        break;
+      case 'local':
+        await this.installFromLocal(source.path, targetPath);
+        break;
+    }
+    
+    // Register the new core system
+    await this.registerCoreSystem(coreName);
+  }
+  
+  async getAvailableCoreSystems(): Promise<CoreSystemInfo[]> {
+    const coreDir = '.lcagents/core/';
+    const entries = await fs.readdir(coreDir, { withFileTypes: true });
+    
+    const systems: CoreSystemInfo[] = [];
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name !== 'active-core.json') {
+        const versionInfo = await this.loadCoreSystemVersion(entry.name);
+        systems.push({
+          name: entry.name,
+          version: versionInfo.version,
+          description: versionInfo.description,
+          agentCount: versionInfo.agentCount,
+          isActive: await this.isActiveCoreSystem(entry.name)
+        });
+      }
+    }
+    
+    return systems;
+  }
+}
+
+interface CoreSystemInfo {
+  name: string;
+  version: string;
+  description: string;
+  agentCount: number;
+  isActive: boolean;
+}
+
+interface CoreSystemSource {
+  type: 'registry' | 'github' | 'local';
+  url?: string;
+  path?: string;
+}
+```
+
+#### Core System Inheritance
+
+Custom agents can inherit from any available core system:
+
+```yaml
+# .lcagents/custom/agents/enterprise-pm.md
+agent:
+  name: "Enterprise Product Manager"
+  inherits: "enterprise-core/pm"  # Inherit from enterprise core system
+  
+# .lcagents/custom/agents/legacy-dev.md  
+agent:
+  name: "Legacy System Developer"
+  inherits: "minimal-core/dev"    # Inherit from minimal core system
+```
+
+### Example Core Systems
+
+#### BMAD-Core (Default)
+```
+.lcagents/core/bmad-core/
+├── agents/          # 11 proven BMAD agents (pm, dev, qa, etc.)
+├── tasks/           # 24+ workflow task files
+├── templates/       # 13+ document templates
+├── checklists/      # 6+ validation checklists
+├── data/            # Knowledge base and context files
+├── utils/           # Utility files and documentation
+├── workflows/       # Process definition files
+├── agent-teams/     # Pre-configured team bundles
+└── version.json     # BMAD-Core version tracking
+```
+
+#### Enterprise-Core (Example Alternative)
+```
+.lcagents/core/enterprise-core/
+├── agents/          # Enterprise-focused agents with compliance features
+│   ├── compliance-pm.md      # PM with SOX/regulatory requirements
+│   ├── secure-dev.md         # Developer with security-first approach
+│   ├── audit-qa.md           # QA with audit trail requirements
+│   └── risk-architect.md     # Risk-aware architecture agent
+├── tasks/           # Enterprise workflow tasks
+│   ├── compliance-prd.md     # PRD with regulatory sections
+│   ├── security-story.md     # Security-focused story creation
+│   └── audit-review.md       # Audit trail documentation
+├── templates/       # Enterprise document templates
+├── policies/        # Corporate governance policies
+└── version.json     # Enterprise-core version tracking
+```
+
+#### Minimal-Core (Example Lightweight)
+```
+.lcagents/core/minimal-core/
+├── agents/          # Essential agents only (pm, dev, qa)
+│   ├── simple-pm.md          # Streamlined PM agent
+│   ├── agile-dev.md          # Lightweight developer agent
+│   └── basic-qa.md           # Essential QA functionality
+├── tasks/           # Core workflow tasks only
+├── templates/       # Minimal template set
+└── version.json     # Minimal-core version tracking
+```
+
+### Pod Configuration Management
+
+Each pod maintains its own configuration that defines enabled agents, overrides, and standards:
+
+```yaml
+# .lcagents/custom/config/pod-config.yaml
+pod:
+  name: "Payment Processing Pod"
+  id: "payment-pod"
+  domain: "financial-services"
+  
+  core:
+    preferred_system: "enterprise-core"  # Preferred core system for this pod
+    fallback_system: "bmad-core"         # Fallback if preferred not available
+    auto_switch: false                   # Whether to auto-switch when preferred becomes available
+  
+  agents:
+    enabled:
+      - "pm"
+      - "dev" 
+      - "qa"
+      - "data-engineer"    # Custom agent
+      - "security-expert"  # Custom agent
+    
+    core_preferences:  # Specify which core system to inherit from for each agent
+      pm: "enterprise-core"    # Use enterprise PM instead of default
+      dev: "bmad-core"         # Use BMAD dev agent
+      qa: "enterprise-core"    # Use enterprise QA for compliance
+    
+    overrides:
+      pm:
+        template_preference: "financial-prd-template"
+        required_reviews: ["security", "compliance"]
+      dev:
+        coding_standards: "pci-dss-compliant"
+        required_gates: ["security-scan", "data-privacy-check"]
+  
+  templates:
+    defaults:
+      prd: "financial-prd-tmpl.yaml"
+      story: "pci-compliant-story-tmpl.yaml"
+  
+  compliance:
+    required_gates: ["pci-dss", "sox-compliance"]
+    audit_level: "enhanced"
+```
+
+### Safe Upgrade Process
+
+The layered architecture with switchable core systems enables safe upgrades without breaking pod customizations:
+
+```bash
+# Upgrade to tested LCAgents release (includes validated core systems)
+npx @lendingclub/lcagents upgrade --version 1.2.0
+
+# Upgrade specific core system
+npx @lendingclub/lcagents core upgrade bmad-core --version 4.46.0
+
+# Process:
+# 1. Download LCAgents package (includes pre-tested core systems)
+# 2. Backup custom and org layers automatically  
+# 3. Update specified core system in appropriate subfolder
+# 4. Validate all customizations work with new core version
+# 5. Test core system switching compatibility
+# 6. Complete upgrade or automatic rollback if issues found
+```
+
+**Note**: LCAgents acts as a tested wrapper around multiple core systems. The LCAgents team pulls updates from various core systems, tests all customization patterns, and publishes stable LCAgents releases for teams to upgrade safely.
+
+## Multi-Core System Upgrade Strategy for Teams
+
+### LCAgents as Tested Multi-Core Wrapper
+
+The layered architecture with switchable core systems ensures that when any core agent system evolves and new versions are released, your teams and users experience **zero disruption** to their customized workflows. LCAgents acts as a stable, tested wrapper around multiple core systems.
+
+### How the Multi-Core Upgrade Pipeline Works
+
+#### 1. LCAgents Development Team Handles Multi-Core Integration
+```typescript
+// LCAgents development process for multi-core updates:
+interface MultiCoreUpgradePipeline {
+  trigger: "Any core system new release detected";
+  process: [
+    "1. LCAgents team pulls latest updates from all supported core systems",
+    "2. Update appropriate .lcagents/core/{system}/ with new version", 
+    "3. Run comprehensive compatibility tests with all customization patterns",
+    "4. Test layered architecture with various pod configurations",
+    "5. Test core system switching scenarios",
+    "6. Validate upgrade scenarios and rollback mechanisms", 
+    "7. Publish tested LCAgents version with all updated core systems"
+  ];
+  userExperience: "Receive stable, tested LCAgents update with choice of core systems";
+}
+
+// Different core systems may use different installation methods:
+const coreSystemMethods = {
+  "bmad-core": "npx bmad-method install",     // ✅ BMAD uses npx
+  "enterprise-core": "npm install @corp/agents", // Enterprise might use npm
+  "minimal-core": "git clone https://...",    // Others might use git
+};
+const bmadUpdateCommand = "npx bmad-method install"; // ✅ Correct
+const npmInstallCommand = "npm install bmad-method"; // ❌ Not how BMAD works
+```
+
+#### 2. User Experience - Simple LCAgents Updates
+```bash
+# What your team does for upgrades (simple and safe):
+
+# Check for LCAgents updates
+@lcagents check-updates
+Available: LCAgents v1.2.0 (includes BMAD-Core v4.45.0)
+Current:   LCAgents v1.1.0 (includes BMAD-Core v4.44.0)
+
+# Upgrade to tested LCAgents version
+@lcagents upgrade --version 1.2.0
+
+# Or automatic upgrade
+npx @lendingclub/lcagents upgrade
+
+# Process:
+# 1. LCAgents downloads its own tested version (not raw BMAD-Core)
+# 2. Backup all customizations automatically
+# 3. Update core layer with pre-tested BMAD-Core
+# 4. Validate all pod customizations work
+# 5. Complete upgrade or rollback if issues found
+```
+
+#### 3. LCAgents Development Workflow for BMAD-Core Integration
+
+```typescript
+// LCAgents team internal process
+class LCAgentsDevelopmentPipeline {
+  async handleNewBMADRelease(bmadVersion: string): Promise<void> {
+    // 1. Pull latest BMAD-Core using their npx method
+    await this.updateBMADCore(bmadVersion);
+    
+    // 2. Update LCAgents core layer
+    await this.updateLCAgentsCore(bmadVersion);
+    
+    // 3. Test with all known customization patterns
+    await this.testAllCustomizationPatterns();
+    
+    // 4. Validate upgrade scenarios
+    await this.testUpgradeScenarios();
+    
+    // 5. Publish new LCAgents version
+    await this.publishLCAgentsRelease();
+  }
+  
+  private async updateBMADCore(version: string): Promise<void> {
+    // Use BMAD's actual update method
+    await this.runCommand('npx bmad-method install');
+    
+    // Copy to LCAgents core structure
+    await this.copyToLCAgentsCore('./bmad-method/', './.lcagents/core/');
+    
+    // Update version tracking
+    await this.updateVersionTracking(version);
+  }
+  
+  private async testAllCustomizationPatterns(): Promise<void> {
+    const testScenarios = [
+      'agent-overrides',
+      'custom-agents',
+      'template-inheritance', 
+      'pod-configurations',
+      'organization-standards',
+      'workflow-extensions'
+    ];
+    
+    for (const scenario of testScenarios) {
+      await this.runCompatibilityTest(scenario);
+    }
+  }
+  
+  private async testUpgradeScenarios(): Promise<void> {
+    // Test upgrade from each previous LCAgents version
+    const previousVersions = await this.getLCAgentsPreviousVersions();
+    
+    for (const prevVersion of previousVersions) {
+      await this.testUpgradeFrom(prevVersion);
+    }
+  }
+}
+
+### How Upgrades Work for Your Teams
+
+#### 1. Tested and Stable Updates
+```typescript
+// Your teams get pre-tested, stable updates:
+interface TeamUpgradeExperience {
+  source: "LCAgents tested releases (not raw BMAD-Core)";
+  testing: "LCAgents team validates all customization patterns before release";
+  userImpact: "zero disruption";
+  customizationPreservation: "100% maintained";
+  downtime: "none";
+  workflowChanges: "none required";
+  rollbackSupport: "automatic if any issues detected";
+}
+
+// Example upgrade scenario:
+const stableUpgradeScenario = {
+  bmadCoreReleased: "v4.45.0 released by BMAD team",
+  lcagentsProcess: [
+    "LCAgents team pulls BMAD v4.45.0 via npx bmad-method install",
+    "Integration testing with all customization patterns", 
+    "Validation of layered architecture compatibility",
+    "Testing of upgrade/rollback scenarios",
+    "Publication of LCAgents v1.2.0 (includes tested BMAD v4.45.0)"
+  ],
+  teamExperience: {
+    notification: "LCAgents v1.2.0 available (tested with BMAD v4.45.0)",
+    action: "npx @lendingclub/lcagents upgrade",
+    result: "stable, tested upgrade with preserved customizations"
+  }
+};
+```
+
+#### 2. User Experience During Upgrades
+```bash
+# What your team sees during an upgrade:
+
+# Before upgrade - normal workflow
+@lcagents activate pm
+PM Agent (Payment Pod): Ready! Custom financial workflows available.
+Current: LCAgents v1.1.0 (BMAD-Core v4.44.0)
+
+# Check for updates
+@lcagents check-updates
+🆕 LCAgents v1.2.0 Available!
+├── Includes: BMAD-Core v4.45.0 (tested and validated)
+├── New Features: Enhanced AI story generation, improved templates
+├── Your Customizations: Fully preserved and tested
+├── Rollback: Available if needed
+└── Tested With: All known customization patterns
+
+# Upgrade when ready
+@lcagents upgrade
+✅ Upgrading to LCAgents v1.2.0...
+├── Backing up customizations
+├── Installing tested BMAD-Core v4.45.0
+├── Validating pod configurations
+├── Testing custom agents
+└── ✅ Upgrade complete!
+
+# After upgrade - same experience + new capabilities
+@lcagents activate pm  
+PM Agent (Payment Pod): Ready! Custom workflows + new v4.45.0 features available.
+
+# Check what's new (optional)
+@lcagents what-new --version 1.2.0
+New in LCAgents v1.2.0 (BMAD-Core v4.45.0):
+✨ Enhanced AI story generation
+✨ Improved template engine
+✨ New architect workflows
+💡 All features tested with your custom pod configurations!
+```
+
+#### 3. LCAgents Release and Distribution Strategy
+
+```yaml
+# LCAgents acts as a tested distribution channel for BMAD-Core
+distribution_strategy:
+  bmad_core:
+    source: "npx bmad-method install"
+    method: "Direct npx execution (no npm install)"
+    frequency: "Released by BMAD team"
+    
+  lcagents_integration:
+    process: "LCAgents team pulls, tests, and wraps BMAD-Core"
+    testing: "Comprehensive compatibility with all customization patterns"
+    packaging: "Stable LCAgents release with tested BMAD-Core"
+    
+  user_updates:
+    source: "Tested LCAgents releases (GitHub/npm)"
+    method: "npx @lendingclub/lcagents upgrade"
+    guarantee: "All customizations preserved and tested"
+
+# Release Timeline Example:
+release_timeline:
+  day_0: "BMAD-Core v4.45.0 released"
+  day_1_to_3: "LCAgents team integration and testing"
+  day_4: "LCAgents v1.2.0 released (includes tested BMAD v4.45.0)"
+  day_5_plus: "Teams upgrade when ready via LCAgents"
+```
+
+#### 4. LCAgents Testing Matrix
+
+```typescript
+// Comprehensive testing before LCAgents release
+class LCAgentsQualityAssurance {
+  async validateBMADCoreIntegration(bmadVersion: string): Promise<ValidationReport> {
+    const testMatrix = {
+      // Test all customization patterns
+      customizationTests: {
+        agentOverrides: await this.testAgentOverrides(),
+        customAgents: await this.testCustomAgents(),
+        templateInheritance: await this.testTemplateInheritance(),
+        podConfigurations: await this.testPodConfigurations(),
+        orgStandards: await this.testOrgStandards(),
+        workflowExtensions: await this.testWorkflowExtensions()
+      },
+      
+      // Test upgrade scenarios
+      upgradeTests: {
+        freshInstall: await this.testFreshInstall(),
+        upgradeFromPrevious: await this.testUpgradeScenarios(),
+        rollbackScenarios: await this.testRollbackScenarios(),
+        migrationFromBMAD: await this.testBMADMigration()
+      },
+      
+      // Test performance and reliability
+      performanceTests: {
+        resourceResolution: await this.testResourceResolution(),
+        cachePerformance: await this.testCachePerformance(),
+        layerMerging: await this.testLayerMerging(),
+        memoryUsage: await this.testMemoryUsage()
+      },
+      
+      // Test compatibility
+      compatibilityTests: {
+        ideIntegration: await this.testIDEIntegration(),
+        copilotIntegration: await this.testCopilotIntegration(),
+        nodeVersions: await this.testNodeVersions(),
+        osCompatibility: await this.testOSCompatibility()
+      }
+    };
+    
+    return {
+      bmadVersion,
+      lcagentsVersion: this.getLCAgentsVersion(),
+      allTestsPassed: this.validateAllTests(testMatrix),
+      readyForRelease: this.isReadyForRelease(testMatrix),
+      testMatrix
+    };
+  }
+}
+
+#### 4. Automatic Validation and Safety Checks
+
+```typescript
+class LCAgentsUpgradeValidator {
+  async validateUpgrade(lcagentsVersion: string): Promise<UpgradeValidationReport> {
+    const validation = {
+      // 1. Backup all customizations
+      backupStatus: await this.createBackup(),
+      
+      // 2. Validate LCAgents package integrity
+      packageValidation: await this.validateLCAgentsPackage(lcagentsVersion),
+      
+      // 3. Test BMAD-Core compatibility (pre-tested by LCAgents team)
+      bmadCompatibility: await this.validateBMADCompatibility(),
+      
+      // 4. Validate custom agents still work
+      customAgentValidation: await this.validateCustomAgents(),
+      
+      // 5. Test agent overrides compatibility
+      overrideCompatibility: await this.testOverrides(),
+      
+      // 6. Verify all workflows execute correctly
+      workflowValidation: await this.testAllWorkflows(),
+      
+      // 7. Performance and caching validation
+      performanceTest: await this.validatePerformance(),
+      
+      // 8. Test rollback capability
+      rollbackTest: await this.testRollbackCapability()
+    };
+    
+    if (validation.anyFailures) {
+      // Automatic rollback
+      await this.rollbackUpgrade();
+      throw new Error("Upgrade validation failed - rollback completed");
+    }
+    
+    return validation;
+  }
+  
+  private async validateLCAgentsPackage(version: string): Promise<PackageValidation> {
+    return {
+      packageIntegrity: await this.verifyPackageSignature(version),
+      bmadCoreVersion: await this.extractBMADVersion(version),
+      compatibilityMatrix: await this.checkCompatibilityMatrix(),
+      testingCertification: await this.verifyTestingCertification(version)
+    };
+  }
+}
+```
+
+### Team Benefits During Upgrades
+
+#### 1. **Seamless Feature Access**
+```bash
+# Teams can adopt new features gradually
+@lcagents explore-new-features --version 2.2.0
+
+Available new features in BMAD-Core v2.2.0:
+1. 🤖 AI-powered story estimation
+2. 📊 Advanced quality metrics
+3. 🔄 Improved workflow orchestration
+4. 🎯 Enhanced template inheritance
+
+# Adopt new features when ready
+@lcagents enable-feature ai-story-estimation --for payment-pod
+@lcagents create-agent ai-estimator --inherits core/pm --add-ai-features
+```
+
+#### 2. **Enhanced Custom Agents**
+```yaml
+# Your custom agents automatically benefit from core improvements
+# .lcagents/custom/agents/data-engineer.md
+agent:
+  name: "Data Engineer"
+  inherits: "core/dev"  # Automatically gets v2.2.0 improvements!
+  
+# Your data engineer now has:
+# ✅ All your custom pipeline commands
+# ✅ All new BMAD v2.2.0 developer capabilities
+# ✅ Zero changes required to your custom workflows
+```
+
+#### 3. **Progressive Enhancement Strategy**
+```typescript
+// Teams can choose their adoption pace
+interface AdoptionStrategy {
+  immediate: {
+    description: "Use new features right away",
+    effort: "low",
+    commands: ["@lcagents enable-feature <feature-name>"]
+  };
+  
+  gradual: {
+    description: "Adopt features over time",
+    effort: "minimal", 
+    approach: "test new features in sandbox first"
+  };
+  
+  conservative: {
+    description: "Keep current workflows, gain improvements",
+    effort: "zero",
+    benefit: "automatic performance and reliability improvements"
+  };
+}
+```
+
+### Upgrade Communication for Teams
+
+#### 1. **Pre-Upgrade Notification**
+```bash
+# Teams get advance notice
+@lcagents upgrade-status
+
+📢 BMAD-Core v2.2.0 Available
+├── Release Date: Next maintenance window
+├── Impact: Zero disruption to your workflows
+├── New Features: 4 new capabilities available
+├── Your Customizations: Fully preserved
+└── Action Required: None (automatic upgrade)
+
+💡 Want to preview? Run: @lcagents preview-upgrade v2.2.0
+```
+
+#### 2. **Post-Upgrade Summary**
+```bash
+# After upgrade completion
+@lcagents upgrade-summary
+
+✅ Upgrade Complete: BMAD-Core v2.1.0 → v2.2.0
+
+📋 What Changed:
+├── Core System: Updated with new features
+├── Your Custom Agents: Preserved and enhanced
+├── Team Workflows: Operating normally
+├── Performance: Improved by 15%
+└── New Features: 4 available for adoption
+
+🎯 Next Steps (Optional):
+1. Explore new features: @lcagents what-new
+2. Test AI estimation: @lcagents try-feature ai-estimation
+3. Update documentation: @lcagents update-team-docs
+
+📊 Validation Results:
+├── All custom agents: ✅ Working
+├── Agent overrides: ✅ Compatible  
+├── Workflows: ✅ Validated
+└── Performance: ✅ Improved
+```
+
+### Technical Implementation for Upgrade Safety
+
+#### 1. **LCAgents Version Management**
+```typescript
+class LCAgentsVersionManager {
+  private readonly LCAGENTS_VERSIONS = '.lcagents/versions/';
+  private readonly BMAD_CORE_MAPPING = '.lcagents/core/bmad-mapping.json';
+  
+  async upgradeLCAgents(newVersion: string): Promise<void> {
+    // 1. Download and verify LCAgents package (includes pre-tested BMAD-Core)
+    const lcagentsPackage = await this.downloadLCAgentsPackage(newVersion);
+    await this.verifyPackageSignature(lcagentsPackage);
+    
+    // 2. Extract BMAD-Core version from LCAgents package
+    const bmadVersion = await this.extractBMADVersion(lcagentsPackage);
+    
+    // 3. Keep current version as backup
+    await this.archiveCurrentVersion();
+    
+    // 4. Install new LCAgents version (includes pre-tested BMAD-Core)
+    await this.installLCAgentsVersion(newVersion, lcagentsPackage);
+    
+    // 5. Test compatibility with customizations
+    const compatibility = await this.testCompatibility(newVersion);
+    
+    if (compatibility.success) {
+      // 6. Atomically switch to new version
+      await this.switchLCAgentsVersion(newVersion);
+      
+      // 7. Rebuild runtime cache
+      await this.rebuildRuntimeCache();
+      
+      // 8. Update BMAD-Core mapping
+      await this.updateBMADCoreMapping(bmadVersion);
+    } else {
+      // Cleanup failed upgrade
+      await this.cleanupFailedUpgrade(newVersion);
+      throw new Error(`Upgrade validation failed: ${compatibility.errors}`);
+    }
+  }
+  
+  private async downloadLCAgentsPackage(version: string): Promise<LCAgentsPackage> {
+    // Download from tested LCAgents releases, not raw BMAD-Core
+    const packageUrl = `https://registry.npmjs.org/@lendingclub/lcagents/${version}`;
+    return await this.downloadAndVerify(packageUrl);
+  }
+  
+  private async extractBMADVersion(lcagentsPackage: LCAgentsPackage): Promise<string> {
+    // Extract the BMAD-Core version that was tested with this LCAgents release
+    return lcagentsPackage.bmadCoreMapping.bmadVersion;
+  }
+  
+  async rollbackUpgrade(): Promise<void> {
+    const previousLCAgentsVersion = await this.getPreviousLCAgentsVersion();
+    await this.switchLCAgentsVersion(previousLCAgentsVersion);
+    await this.rebuildRuntimeCache();
+  }
+}
+
+interface LCAgentsPackage {
+  version: string;
+  bmadCoreMapping: {
+    bmadVersion: string;           // e.g., "v4.45.0"
+    testedWith: string[];          // Tested customization patterns
+    compatibilityMatrix: Record<string, boolean>;
+    pulledVia: "npx bmad-method install";  // How BMAD was obtained
+  };
+  core: BMADCoreFiles;
+  signature: string;
+  testingCertification: TestingReport;
+}
+```
+
+#### 2. **BMAD-Core Integration Testing (LCAgents Team Process)**
+```typescript
+class BMADCoreIntegration {
+  async integrateBMADCore(bmadVersion: string): Promise<IntegrationResult> {
+    // LCAgents development team process for new BMAD-Core releases
+    
+    // 1. Pull BMAD-Core using their official npx method
+    await this.pullBMADCoreViaNpx(bmadVersion);
+    
+    // 2. Map BMAD structure to LCAgents layered architecture
+    await this.mapToLCAgentsStructure();
+    
+    // 3. Test with all known customization patterns
+    const testResults = await this.runComprehensiveTests();
+    
+    // 4. Package for distribution if all tests pass
+    if (testResults.allPassed) {
+      await this.packageLCAgentsRelease(bmadVersion);
+    }
+    
+    return testResults;
+  }
+  
+  private async pullBMADCoreViaNpx(version: string): Promise<void> {
+    // Use BMAD's actual installation method (npx, not npm install)
+    console.log(`Pulling BMAD-Core ${version} via npx bmad-method install`);
+    
+    const bmadCommand = 'npx bmad-method install';
+    await this.executeCommand(bmadCommand);
+    
+    // Verify BMAD-Core was installed correctly
+    await this.verifyBMADInstallation(version);
+  }
+  
+  private async runComprehensiveTests(): Promise<IntegrationTestResults> {
+    return {
+      layeredArchitectureTest: await this.testLayeredArchitecture(),
+      customizationPatternTests: await this.testAllCustomizationPatterns(),
+      upgradeScenarioTests: await this.testUpgradeScenarios(),
+      performanceTests: await this.testPerformance(),
+      compatibilityTests: await this.testCompatibility(),
+      rollbackTests: await this.testRollbackScenarios()
+    };
+  }
+}
+
+### Enterprise Upgrade Management
+
+#### 1. **Organization-Wide Upgrades**
+```bash
+# For organizations with multiple pods
+@lcagents upgrade-org --version 1.2.0 --pods all
+
+Organization Upgrade: LCAgents v1.2.0 (BMAD-Core v4.45.0)
+├── Payment Pod: ✅ Validated
+├── Platform Pod: ✅ Validated  
+├── Mobile Pod: ✅ Validated
+├── Data Pod: ✅ Validated
+└── Security Pod: ✅ Validated
+
+🚀 Ready to upgrade all pods with zero disruption
+Note: BMAD-Core v4.45.0 pre-tested by LCAgents team
+```
+
+#### 2. **Staged Rollout Strategy**
+```bash
+# Conservative rollout strategy
+@lcagents upgrade-strategy staged --version 1.2.0
+
+Week 1: Pilot pods (1-2 teams) - LCAgents v1.2.0
+Week 2: Early adopters (25% of pods) - After pilot validation
+Week 3: Majority rollout (75% of pods) - After early adopter success
+Week 4: Complete rollout (100% of pods) - Full organization
+
+Each stage includes:
+├── Pre-tested LCAgents package installation
+├── Automatic validation of customizations
+├── Rollback capability to previous LCAgents version
+├── Team notification with BMAD-Core feature highlights
+└── Success metrics tracking
+```
+
+#### 3. **LCAgents Release Pipeline**
+```yaml
+# How LCAgents provides stable BMAD-Core updates
+release_pipeline:
+  bmad_detection:
+    trigger: "BMAD-Core new release (e.g., v4.45.0)"
+    method: "Monitor BMAD-METHOD GitHub releases"
+    
+  lcagents_integration:
+    step_1: "Pull BMAD-Core via 'npx bmad-method install'"
+    step_2: "Map to LCAgents layered architecture"
+    step_3: "Test all customization patterns"
+    step_4: "Validate upgrade/rollback scenarios"
+    step_5: "Performance and compatibility testing"
+    
+  lcagents_release:
+    package: "LCAgents v1.2.0 (includes tested BMAD v4.45.0)"
+    distribution: "GitHub releases + npm registry"
+    certification: "All customization patterns validated"
+    
+  user_adoption:
+    command: "npx @lendingclub/lcagents upgrade"
+    guarantee: "Tested, stable, rollback-capable"
+```
+
+### Key Messages for Your Teams
+
+#### ✅ **What Teams Don't Need to Worry About:**
+- **Learning new workflows** - everything works exactly the same
+- **Updating custom agents** - they automatically benefit from improvements
+- **Losing customizations** - all pod-specific work is preserved
+- **Downtime or disruption** - upgrades happen seamlessly
+- **Compatibility issues** - automatic validation prevents problems
+
+#### 🎯 **What Teams Gain:**
+- **Improved performance** - core system enhancements
+- **New capabilities** - optional features to adopt when ready
+- **Enhanced reliability** - bug fixes and stability improvements
+- **Better tooling** - improved development experience
+- **Future-proofing** - continuous evolution without disruption
+
+#### 💡 **Optional Opportunities:**
+- **Explore new features** - when teams have time and interest
+- **Enhance custom agents** - inherit new core capabilities
+- **Optimize workflows** - leverage new performance improvements
+- **Share innovations** - contribute improvements back to the community
+
+### Benefits of Layered Architecture with Switchable Core Systems
+
+1. **Pluggable Core Systems**: Teams can choose the most appropriate core agent system for their needs
+2. **Safe Core Switching**: Switch between different core systems without losing customizations  
+3. **Customization Without Modification**: Pods can customize without altering any core system
+4. **Safe Upgrades**: Core system updates don't break pod-specific customizations
+5. **Organization Standards**: Company-wide policies can be enforced consistently across all core systems
+6. **Pod Isolation**: Each pod's customizations don't affect others, regardless of core system choice
+7. **Inheritance Flexibility**: Custom agents can inherit from any available core system
+8. **Resource Resolution**: Automatic layer-based resource lookup with core system awareness
+9. **Performance**: Runtime caching for merged configurations across all core systems
+10. **Maintainability**: Clear separation of concerns across layers and core systems
+11. **Vendor Independence**: Not locked into any single core agent system
+12. **Gradual Migration**: Teams can migrate between core systems incrementally
+
 ### Basic Usage
 
 ```bash
@@ -145,6 +1188,11 @@ rm -rf .lcagents .lcagents-config.json README-lcagents.md
 @lcagents activate dev         # Developer  
 @lcagents activate qa          # QA Engineer
 @lcagents activate em          # Engineering Manager
+
+# Core system management
+@lcagents core list            # List available core systems
+@lcagents core switch <name>   # Switch to different core system
+@lcagents core status          # Show active core system info
 
 # Get help for current agent
 @lcagents help
@@ -167,6 +1215,14 @@ rm -rf .lcagents .lcagents-config.json README-lcagents.md
 - `@lcagents activate <agent>` - Switch to specific agent (pm, dev, qa, em, architect)
 - `@lcagents status` - Show overall system status and active agent
 - `@lcagents help [agent]` - Show help for specific agent or general help
+
+### Core System Management Commands
+- `@lcagents core list` - List all available core systems and their status
+- `@lcagents core switch <name>` - Switch to a different core system
+- `@lcagents core install <name>` - Install a new core system from registry
+- `@lcagents core status` - Show active core system information
+- `@lcagents core validate-switch <name>` - Check compatibility before switching
+- `@lcagents core upgrade <name>` - Upgrade specific core system to latest version
 
 ### Role-Specific Commands
 
@@ -1407,19 +2463,42 @@ This comprehensive audit system ensures full traceability of all LCAgents activi
 
 ## Core Design Philosophy
 
-The LCAgents system provides a standardized approach to engineering practices through AI-powered role-based agents that integrate seamlessly with GitHub Copilot, ensuring consistency across teams and projects.
+The LCAgents system provides a standardized approach to engineering practices through AI-powered role-based agents that integrate seamlessly with GitHub Copilot, ensuring consistency across teams and projects while allowing pod-specific customizations through a layered architecture.
 
 ## Key Architectural Components
 
-### 1. Agent Persona System
+### 1. Layered Agent System
 ```yaml
-# Each agent has a standardized structure:
+# Three-layer architecture for agent management:
+layers:
+  core:        # Immutable BMAD-Core baseline
+    path: ".lcagents/core/"
+    description: "Read-only original BMAD agents and resources"
+    versioned: true
+    
+  org:         # Organization-wide standards (optional)
+    path: ".lcagents/org/" 
+    description: "Company policies and standards"
+    applies_to: "all pods in organization"
+    
+  custom:      # Pod-specific customizations
+    path: ".lcagents/custom/"
+    description: "Pod customizations, overrides, and new agents"
+    priority: "highest"
+
+# Resource resolution priority: custom → org → core
+```
+
+### 2. Agent Persona System
+```yaml
+# Each agent has a standardized structure with inheritance support:
 agent:
   name: "Role Name"
   id: "role-id" 
   title: "Display Title"
   icon: "emoji"
   whenToUse: "Clear guidance on when to use this agent"
+  inherits: "core/base-agent"  # Optional inheritance from core agents
 
 persona:
   role: "Specific role definition"
@@ -1434,16 +2513,47 @@ persona:
 - **Numbered selection lists** for user choices
 - **GitHub Copilot native**: Commands work within the Copilot Chat interface
 
-### 3. File Organization Pattern
+### 3. Layered File Organization Pattern
 ```
-lcagents/
-├── agents/           # Agent persona definitions
-├── checklists/       # Quality gates and validation checklists  
-├── data/            # Knowledge base and reference data
-├── tasks/           # Executable workflow scripts
-├── templates/       # Document templates (YAML-based)
-├── workflows/       # End-to-end process definitions
-└── utils/           # Shared utilities and GitHub Copilot adapters
+.lcagents/
+├── core/             # Read-only BMAD-Core baseline (immutable)
+│   ├── agents/       # Original BMAD agent definitions
+│   ├── tasks/        # Original BMAD workflow scripts
+│   ├── templates/    # Original BMAD document templates
+│   ├── checklists/   # Original BMAD validation checklists
+│   ├── data/         # Original BMAD knowledge base
+│   ├── workflows/    # Original BMAD process definitions
+│   ├── utils/        # Original BMAD utilities
+│   └── version.json  # Core version tracking
+├── org/              # Organization-wide standards (optional)
+│   ├── agents/       # Org-specific agent overrides
+│   ├── templates/    # Org-specific templates
+│   ├── policies/     # Company policies & compliance
+│   ├── workflows/    # Org-specific workflows
+│   └── config/       # Organization configuration
+├── custom/           # Pod-specific customizations
+│   ├── agents/       # Pod custom/override agents
+│   │   ├── new-agent.md        # Completely new agents
+│   │   └── overrides/          # Existing agent modifications
+│   │       ├── pm-overrides.yaml
+│   │       └── dev-overrides.yaml
+│   ├── templates/    # Pod-specific templates
+│   ├── tasks/        # Pod-specific workflows
+│   ├── workflows/    # Pod-specific processes
+│   └── config/       # Pod configuration
+├── runtime/          # Dynamic resolution and caching
+│   ├── merged-agents/ # Resolved agent definitions
+│   ├── cache/        # Performance cache
+│   └── logs/         # Runtime logs
+├── docs/             # Generated documents (unchanged)
+│   └── {PROJECT_ID}/ # Project-organized documents
+└── agents/           # Active resolved agents (symlinked)
+    ├── checklists/   # Active validation checklists (symlinked)
+    ├── data/         # Active knowledge base (symlinked)
+    ├── tasks/        # Active workflows (symlinked)
+    ├── templates/    # Active templates (symlinked)
+    ├── workflows/    # Active processes (symlinked)
+    └── utils/        # Active utilities (symlinked)
 ```
 
 ### 4. Key Agent Roles
@@ -1948,177 +3058,168 @@ your-project/
 - **Repository Management**: Automatic setup and configuration within GitHub repositories
 - **Documentation**: Automatic generation of project documentation and reports
 
-## BMAD-Core Resource Replication Strategy
+## BMAD-Core Integration and Layered Resource Strategy
 
-### Complete Agent System Replication
-LCAgents Phase 1 implements a complete replication of the proven BMAD-Core agent system, ensuring all existing workflows, templates, and tasks are available in target project repositories. This provides immediate value by leveraging battle-tested agent capabilities.
+### Layered Resource Management
+LCAgents v1.1 implements a layered approach to BMAD-Core integration, ensuring all existing workflows, templates, and tasks are available while enabling pod-specific customizations. The core BMAD-Core system remains immutable and upgradeable.
 
-### Resource Categories to Replicate
+### Layer-Based Resource Resolution
 
-#### 1. Agent Definitions
-**Source**: `.bmad-core/agents/` → **Target**: `.lcagents/agents/`
-- `pm.md` - Complete Product Manager agent with full YAML configuration
-- `dev.md` - Complete Developer agent with full YAML configuration  
-- `qa.md` - Complete QA Engineer agent with full YAML configuration
-- Each agent file contains complete persona, commands, and dependencies
+#### 1. Core BMAD Layer (`.lcagents/core/`)
+**Source**: BMAD-Core package → **Target**: `.lcagents/core/`
+- **Agent Definitions**: Complete original BMAD agent configurations (immutable)
+- **Task Workflows**: All proven BMAD workflows and processes 
+- **Templates**: Original BMAD document templates
+- **Checklists**: Original BMAD validation checklists
+- **Data**: Original BMAD knowledge base and context
+- **Version Tracking**: `version.json` for safe upgrades
 
-#### 2. Task Workflows
-**Source**: `.bmad-core/tasks/` → **Target**: `.lcagents/tasks/`
-Critical tasks for MVP functionality:
-- `create-doc.md` - Document generation workflow (PM)
-- `shard-doc.md` - Document sharding for development (PM)
-- `brownfield-create-epic.md` - Epic creation for existing projects (PM)
-- `brownfield-create-story.md` - Story creation for existing projects (PM)
-- `correct-course.md` - Course correction workflow (PM)
-- `develop-story.md` - Core development workflow (Dev)
-- `apply-qa-fixes.md` - QA fix application (Dev)
-- `execute-checklist.md` - Checklist execution system (All agents)
-- `review-story.md` - Story review workflow (QA)
-- `qa-gate.md` - Quality gate decision workflow (QA)
-- `nfr-assess.md` - Non-functional requirement assessment (QA)
-- `risk-profile.md` - Risk assessment workflow (QA)
-- `test-design.md` - Test design workflow (QA)
-- `trace-requirements.md` - Requirements tracing (QA)
+#### 2. Organization Layer (`.lcagents/org/`)
+**Purpose**: Company-wide standards and policies
+- **Agent Overrides**: Organization-specific agent modifications
+- **Templates**: Company-standard document templates
+- **Policies**: Compliance and governance requirements
+- **Workflows**: Organization-specific processes
+- **Configuration**: Company coding standards and compliance rules
 
-#### 3. Document Templates
-**Source**: `.bmad-core/templates/` → **Target**: `.lcagents/templates/`
-Essential templates for MVP:
-- `prd-tmpl.yaml` - Standard Product Requirements Document
-- `brownfield-prd-tmpl.yaml` - PRD for existing systems
-- `story-tmpl.yaml` - User story template
-- `qa-gate-tmpl.yaml` - Quality gate decision template
-- Additional templates as needed by task workflows
+#### 3. Pod Customization Layer (`.lcagents/custom/`)
+**Purpose**: Team-specific customizations and new agents
+- **Custom Agents**: Entirely new agents for pod-specific needs
+- **Agent Overrides**: Pod-specific modifications to existing agents
+- **Templates**: Pod-specific document templates
+- **Tasks**: Pod-specific workflows and processes
+- **Configuration**: Pod settings and team structure
 
-#### 4. Validation Checklists
-**Source**: `.bmad-core/checklists/` → **Target**: `.lcagents/checklists/`
-- `pm-checklist.md` - Product Manager validation checklist
-- `story-dod-checklist.md` - Story Definition of Done checklist
-- `change-checklist.md` - Change management checklist
+### Resource Resolution Process
+```typescript
+// Resolution priority: custom → org → core
+const resolveResource = async (type: string, name: string) => {
+  // 1. Check pod customizations first (highest priority)
+  if (await exists(`.lcagents/custom/${type}/${name}`)) {
+    return loadResource(`.lcagents/custom/${type}/${name}`);
+  }
+  
+  // 2. Check organization standards
+  if (await exists(`.lcagents/org/${type}/${name}`)) {
+    return loadResource(`.lcagents/org/${type}/${name}`);
+  }
+  
+  // 3. Fall back to core BMAD (baseline)
+  return loadResource(`.lcagents/core/${type}/${name}`);
+};
+```
 
-#### 5. Agent Context Data
-**Source**: `.bmad-core/data/` → **Target**: `.lcagents/data/`
-- `technical-preferences.md` - Technical standards and preferences
-
-### Runtime Resource Resolution
-Agents must be able to dynamically load their dependencies from the `.lcagents/` structure:
-- **File Resolution**: `.lcagents/{type}/{name}` mapping system
+### Runtime Resource Resolution and Merging
+Agents dynamically resolve their configurations and dependencies through the layered system:
+- **Layer Resolution**: Automatic precedence-based resource lookup (custom → org → core)
+- **Agent Merging**: Runtime merging of base agents with overrides and customizations
 - **Lazy Loading**: Resources loaded only when commands are executed
-- **Error Handling**: Clear messages when dependencies are missing
-- **Template Processing**: YAML template rendering with user input
+- **Performance Caching**: Merged configurations cached for optimal performance
+- **Error Handling**: Clear messages when dependencies are missing across layers
 
 ### Compatibility Requirements
-- **Command Syntax**: Identical to BMAD-Core (`*help`, `*create-prd`, etc.)
-- **Agent Personas**: Exact replication of agent personalities and behaviors
-- **Workflow Logic**: Task execution follows identical patterns
-- **Template Output**: Generated documents match BMAD-Core format and structure
+- **Command Syntax**: Maintains BMAD-Core compatibility (`*help`, `*create-prd`, etc.)
+- **Agent Personas**: Base personalities preserved with layered enhancements
+- **Workflow Logic**: Core task execution patterns with pod-specific extensions
+- **Template Output**: Generated documents maintain BMAD-Core format with customizations
 
 ### Technical Implementation Requirements
 
-#### 1. Agent Loading System
+#### 1. Layered Agent Loading System
 ```typescript
-interface AgentLoader {
-  loadAgent(agentId: string): Promise<AgentDefinition>;
-  parseAgentYAML(content: string): AgentDefinition;
-  validateAgentDependencies(agent: AgentDefinition): boolean;
+interface LayeredAgentLoader {
+  loadAgent(agentId: string): Promise<MergedAgentDefinition>;
+  mergeAgentLayers(
+    coreAgent: AgentDefinition,
+    orgOverrides?: AgentOverride,
+    podOverrides?: AgentOverride,
+    customAgent?: AgentDefinition
+  ): MergedAgentDefinition;
+  validateMergedAgent(agent: MergedAgentDefinition): boolean;
 }
 ```
 
-#### 2. Resource Resolution Engine
+#### 2. Layered Resource Resolution Engine
 ```typescript
-interface ResourceResolver {
+interface LayeredResourceResolver {
+  resolveResource(type: ResourceType, name: string): Promise<string>;
+  resolveWithInheritance(type: ResourceType, name: string): Promise<ResolvedResource>;
   resolveTask(taskName: string): Promise<string>;
   resolveTemplate(templateName: string): Promise<string>;
   resolveChecklist(checklistName: string): Promise<string>;
   resolveData(dataName: string): Promise<string>;
-  resolveUtil(utilName: string): Promise<string>;
-  resolveWorkflow(workflowName: string): Promise<string>;
-  resolveAgentTeam(teamName: string): Promise<string>;
-  // Maps .bmad-core/{type}/{name} → .lcagents/{type}/{name}
-  // Supports: tasks, templates, checklists, data, utils, workflows, agent-teams
+  resolveAgentOverride(agentId: string, layer: LayerType): Promise<AgentOverride>;
+  // Resolution order: .lcagents/custom/ → .lcagents/org/ → .lcagents/core/
 }
 ```
 
-#### 3. Template Processing System
+#### 3. Runtime Cache Management
 ```typescript
-interface TemplateProcessor {
-  renderYAMLTemplate(template: string, context: any): Promise<string>;
-  promptUserForInput(template: YAMLTemplate): Promise<any>;
-  validateTemplateSchema(template: any): boolean;
+interface RuntimeCacheManager {
+  cacheResolvedAgent(agentId: string, mergedAgent: MergedAgentDefinition): Promise<void>;
+  getCachedAgent(agentId: string): Promise<MergedAgentDefinition | null>;
+  invalidateCache(layer?: LayerType): Promise<void>;
+  buildCache(): Promise<void>;
 }
 ```
 
-#### 4. Command Execution Engine
+#### 4. Layer Management System
 ```typescript
-interface CommandExecutor {
-  executeCommand(agent: AgentDefinition, command: string, args?: any[]): Promise<CommandResult>;
-  loadTaskWorkflow(taskName: string): Promise<TaskWorkflow>;
-  executeTaskSteps(workflow: TaskWorkflow, context: any): Promise<any>;
+interface LayerManager {
+  validateLayerIntegrity(layer: LayerType): Promise<ValidationResult>;
+  upgradeCore(newVersion: string): Promise<void>;
+  backupCustomizations(): Promise<void>;
+  restoreCustomizations(): Promise<void>;
 }
 ```
 
-#### 5. File Operation System
-```typescript
-interface FileOperations {
-  createDocument(path: string, content: string, projectId: string): Promise<void>;
-  updateDocument(path: string, content: string, section?: string): Promise<void>;
-  ensureProjectStructure(projectId: string): Promise<void>;
-  validateProjectId(projectId: string): boolean;
-}
-```
+### Layered Resource Mapping for Multi-Pod Operation
 
-### Complete Resource Mapping for Seamless Operation
-
-#### Directory Structure Mapping
-**Source → Target mappings for complete BMAD-Core compatibility**:
+#### Three-Layer Directory Structure
+**Core → Organization → Pod mapping for complete customization support**:
 
 ```
-.bmad-core/                    → .lcagents/
-├── agents/                    → agents/
-│   ├── pm.md                 → pm.md
-│   ├── dev.md                → dev.md  
-│   ├── qa.md                 → qa.md
-│   ├── architect.md          → architect.md
-│   ├── analyst.md            → analyst.md
-│   ├── em.md                 → em.md
-│   ├── po.md                 → po.md
-│   ├── sm.md                 → sm.md
-│   ├── ux-expert.md          → ux-expert.md
-│   ├── bmad-master.md        → bmad-master.md
-│   └── bmad-orchestrator.md  → bmad-orchestrator.md
-├── agent-teams/               → agent-teams/
-│   ├── team-all.yaml         → team-all.yaml
-│   ├── team-fullstack.yaml   → team-fullstack.yaml
-│   ├── team-ide-minimal.yaml → team-ide-minimal.yaml
-│   └── team-no-ui.yaml       → team-no-ui.yaml
-├── tasks/ (24 files)          → tasks/
-├── templates/ (13 files)      → templates/
-├── checklists/ (6 files)      → checklists/
-├── data/ (6 files)            → data/
-├── utils/ (2 files)           → utils/
-├── workflows/ (6 files)       → workflows/
-└── core-config.yaml           → config/core-config.yaml
+.lcagents/
+├── core/                      # Immutable BMAD-Core baseline
+│   ├── agents/               # Original BMAD agents (read-only)
+│   ├── tasks/                # Original BMAD workflows
+│   ├── templates/            # Original BMAD templates
+│   ├── checklists/           # Original BMAD checklists
+│   ├── data/                 # Original BMAD knowledge base
+│   ├── utils/                # Original BMAD utilities
+│   ├── workflows/            # Original BMAD processes
+│   └── version.json          # Version tracking for upgrades
+├── org/                      # Organization standards (optional)
+│   ├── agents/               # Company-wide agent overrides
+│   ├── templates/            # Company-standard templates
+│   ├── policies/             # Compliance and governance
+│   └── config/               # Organization configuration
+├── custom/                   # Pod-specific customizations
+│   ├── agents/               # Pod custom/override agents
+│   │   ├── new-agent.md      # Completely new pod agents
+│   │   └── overrides/        # Existing agent modifications
+│   ├── templates/            # Pod-specific templates
+│   ├── tasks/                # Pod-specific workflows
+│   └── config/               # Pod configuration
+└── runtime/                  # Dynamic resolution and caching
+    ├── merged-agents/        # Resolved agent definitions
+    ├── cache/                # Performance cache
+    └── logs/                 # Resolution and audit logs
 ```
 
-#### Resource Resolution Implementation
-**File path resolution must support BMAD-Core patterns**:
-- **Agent Dependencies**: `bmad-core/{type}/{name}` → `.lcagents/{type}/{name}`
-- **Template Resolution**: Templates must be accessible from any agent
-- **Task Execution**: All task files must resolve correctly for workflow execution
-- **Data Access**: Knowledge base and preference files accessible across agents
-- **Utility Functions**: Workflow management and documentation utilities available
-- **Team Configurations**: Agent team bundles must load correctly for orchestration
+#### Layered Resource Resolution Implementation
+**Multi-layer path resolution with precedence**:
+- **Custom Priority**: `.lcagents/custom/{type}/{name}` (highest priority)
+- **Organization Priority**: `.lcagents/org/{type}/{name}` (middle priority)  
+- **Core Baseline**: `.lcagents/core/{type}/{name}` (baseline/fallback)
+- **Runtime Cache**: `.lcagents/runtime/merged-agents/{name}` (performance)
 
-#### Critical Files for Phase 1 Operation
-**Must-have files for basic functionality**:
-
-**Core Agent Files** (3 essential):
-- `agents/pm.md`, `agents/dev.md`, `agents/qa.md`
-
-**Essential Tasks** (12 core workflows):
-- `create-doc.md`, `shard-doc.md`, `develop-story.md`, `review-story.md`
-- `brownfield-create-epic.md`, `brownfield-create-story.md`
-- `execute-checklist.md`, `apply-qa-fixes.md`
-- `qa-gate.md`, `nfr-assess.md`, `risk-profile.md`, `test-design.md`
+#### Agent Override and Extension Patterns
+**Pod customization patterns**:
+- **Agent Overrides**: Modify existing core agents without changing core files
+- **Custom Agents**: Create entirely new agents with inheritance from core agents
+- **Template Inheritance**: Pod templates can extend organization and core templates
+- **Workflow Extensions**: Add pod-specific tasks while preserving core workflows
 
 **Essential Templates** (5 core templates):
 - `prd-tmpl.yaml`, `brownfield-prd-tmpl.yaml`, `story-tmpl.yaml`, `qa-gate-tmpl.yaml`
@@ -2464,5 +3565,67 @@ lcagents metrics --export --format json
 # Integration with project management tools
 lcagents integrate --tool jira --config jira-config.json
 ```
+
+## Migration Strategy for Existing BMAD-Core Users
+
+### Seamless Migration Path
+
+For teams currently using BMAD-Core, LCAgents v1.1 provides a seamless migration path that preserves existing workflows while enabling new layered customization capabilities:
+
+#### 1. Automated Migration Process
+```bash
+# Migrate existing .bmad-core to layered LCAgents
+npx @lendingclub/lcagents migrate --from-bmad-core
+
+# Process:
+# 1. Backup existing .bmad-core directory
+# 2. Create .lcagents/core/ with BMAD-Core baseline
+# 3. Migrate custom agents to .lcagents/custom/agents/
+# 4. Migrate custom templates to .lcagents/custom/templates/
+# 5. Generate pod configuration based on current setup
+# 6. Build runtime cache for resolved configurations
+```
+
+#### 2. Backward Compatibility
+- **Command Syntax**: All existing `*help`, `*create-prd`, etc. commands work unchanged
+- **Document Output**: Generated documents maintain exact same format and structure
+- **Workflow Logic**: All existing workflows execute identically
+- **Agent Personas**: All agent behaviors preserved exactly
+
+#### 3. Gradual Enhancement
+After migration, teams can gradually adopt new v1.1 features:
+```bash
+# Start with basic migration (full compatibility)
+lcagents migrate --from-bmad-core
+
+# Add pod-specific customizations over time
+lcagents create-agent data-engineer --inherits dev
+lcagents override-agent pm --add-command create-security-story
+
+# Enable organization standards when ready
+lcagents install-org-standards --from-url company-standards.json
+```
+
+#### 4. Validation and Testing
+```bash
+# Validate migration success
+lcagents validate-migration --compare-with-bmad-core
+
+# Test all existing workflows
+lcagents test-agents --all
+lcagents test-workflows --all
+
+# Generate migration report
+lcagents migration-report --output migration-summary.md
+```
+
+### Benefits of Migration to v1.1
+
+1. **Zero Disruption**: Existing workflows continue unchanged
+2. **Future-Proof**: Safe upgrade path for future BMAD-Core improvements  
+3. **Customization Freedom**: Add pod-specific agents and workflows without modifying core
+4. **Organization Standards**: Enable company-wide consistency when needed
+5. **Performance**: Improved caching and resource resolution
+6. **Multi-Pod Support**: Scale across multiple teams with different needs
 
 This architecture provides a robust foundation for standardizing engineering practices while maintaining flexibility for team-specific adaptations across GitHub Copilot supported IDEs.

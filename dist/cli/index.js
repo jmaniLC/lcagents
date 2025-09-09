@@ -37,6 +37,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
 const initModule = __importStar(require("./commands/init"));
 const uninstallModule = __importStar(require("./commands/uninstall"));
+const core_1 = require("./commands/core");
 const repository_config_1 = require("../utils/repository-config");
 // Load repository configuration
 const repoConfig = (0, repository_config_1.loadRepositoryConfig)();
@@ -48,6 +49,7 @@ program
 // Register commands
 program.addCommand(initModule.initCommand);
 program.addCommand(uninstallModule.uninstallCommand);
+program.addCommand(core_1.coreCommand);
 // Add additional commands for development
 program
     .command('validate')
