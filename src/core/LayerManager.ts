@@ -60,7 +60,18 @@ export class LayerManager implements ResourceResolver {
   async resolveAgent(agentId: string, coreSystem?: string): Promise<AgentResolutionPath> {
     const activeCore = coreSystem || await this.coreSystemManager.getActiveCoreSystem() || 'bmad-core';
     
-    const corePath = path.join(this.lcagentsPath, 'core', activeCore, 'agents', `${agentId}.md`);
+    const activeCoreSystem = await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCoreSystem) {
+      return { 
+        agentId, 
+        coreSystem: '', 
+        corePath: '', 
+        finalPath: '', 
+        layerSources: [] 
+      };
+    }
+    
+    const corePath = path.join(this.lcagentsPath, 'core', `.${activeCoreSystem}`, 'agents', `${agentId}.md`);
     const orgOverridePath = path.join(this.lcagentsPath, 'org', 'agents', 'overrides', `${agentId}.yaml`);
     const customOverridePath = path.join(this.lcagentsPath, 'custom', 'agents', 'overrides', `${agentId}.yaml`);
     
@@ -95,8 +106,6 @@ export class LayerManager implements ResourceResolver {
    * Resolve task with layer precedence
    */
   async resolveTask(taskId: string, coreSystem?: string): Promise<LayerResolutionResult> {
-    const activeCore = coreSystem || await this.coreSystemManager.getActiveCoreSystem() || 'bmad-core';
-    
     // Check custom layer first (highest priority)
     const customPath = path.join(this.lcagentsPath, 'custom', 'tasks', `${taskId}.md`);
     if (await fs.pathExists(customPath)) {
@@ -122,7 +131,12 @@ export class LayerManager implements ResourceResolver {
     }
 
     // Fall back to core layer
-    const corePath = path.join(this.lcagentsPath, 'core', activeCore, 'tasks', `${taskId}.md`);
+    const activeCoreSystem = coreSystem || await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCoreSystem) {
+      return { path: '', source: 'core', exists: false };
+    }
+    
+    const corePath = path.join(this.lcagentsPath, 'core', `.${activeCoreSystem}`, 'tasks', `${taskId}.md`);
     if (await fs.pathExists(corePath)) {
       const stats = await fs.stat(corePath);
       return {
@@ -144,8 +158,6 @@ export class LayerManager implements ResourceResolver {
    * Resolve template with layer precedence
    */
   async resolveTemplate(templateId: string, coreSystem?: string): Promise<LayerResolutionResult> {
-    const activeCore = coreSystem || await this.coreSystemManager.getActiveCoreSystem() || 'bmad-core';
-    
     // Check custom layer first
     const customPath = path.join(this.lcagentsPath, 'custom', 'templates', `${templateId}`);
     if (await fs.pathExists(customPath)) {
@@ -171,7 +183,12 @@ export class LayerManager implements ResourceResolver {
     }
 
     // Fall back to core layer
-    const corePath = path.join(this.lcagentsPath, 'core', activeCore, 'templates', `${templateId}`);
+    const activeCoreSystem = coreSystem || await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCoreSystem) {
+      return { path: '', source: 'core', exists: false };
+    }
+    
+    const corePath = path.join(this.lcagentsPath, 'core', `.${activeCoreSystem}`, 'templates', `${templateId}`);
     if (await fs.pathExists(corePath)) {
       const stats = await fs.stat(corePath);
       return {
@@ -224,7 +241,7 @@ export class LayerManager implements ResourceResolver {
     }
 
     // Fall back to core layer
-    const corePath = path.join(this.lcagentsPath, 'core', activeCore, resourceType, resourceId);
+    const corePath = path.join(this.lcagentsPath, 'core', `.${activeCore}`, resourceType, resourceId);
     if (await fs.pathExists(corePath)) {
       const stats = await fs.stat(corePath);
       return {
@@ -627,7 +644,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
     const layers = [
       { name: 'custom', path: path.join(this.lcagentsPath, 'custom', resourceType) },
       { name: 'org', path: path.join(this.lcagentsPath, 'org', resourceType) },
-      { name: 'core', path: path.join(this.lcagentsPath, 'core', activeCore, resourceType) }
+      { name: 'core', path: path.join(this.lcagentsPath, 'core', `.${activeCore}`, resourceType) }
     ];
 
     // Check each layer in precedence order
@@ -677,7 +694,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
       let layerPath: string;
       
       if (layer === 'core') {
-        layerPath = path.join(this.lcagentsPath, 'core', activeCore, resourceType);
+        layerPath = path.join(this.lcagentsPath, 'core', `.${activeCore}`, resourceType);
       } else {
         layerPath = path.join(this.lcagentsPath, layer, resourceType);
       }
@@ -705,7 +722,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
 
     // Check layers in reverse precedence to allow overrides
     const layers = [
-      { name: 'core', path: path.join(this.lcagentsPath, 'core', activeCore, resourceType) },
+      { name: 'core', path: path.join(this.lcagentsPath, 'core', `.${activeCore}`, resourceType) },
       { name: 'org', path: path.join(this.lcagentsPath, 'org', resourceType) },
       { name: 'custom', path: path.join(this.lcagentsPath, 'custom', resourceType) }
     ];

@@ -116,7 +116,7 @@ export class CoreSystemManager {
         };
       }
 
-      const targetPath = path.join(this.coreBasePath, coreSystemName);
+      const targetPath = path.join(this.coreBasePath, `.${coreSystemName}`);
 
       // Check if already installed
       if (await fs.pathExists(targetPath) && !force) {
@@ -215,6 +215,7 @@ export class CoreSystemManager {
       throw new Error(`Bundled resources not found at: ${sourcePath}`);
     }
 
+    // Copy resources directly to target path (which already has dot prefix)
     await fs.copy(sourcePath, targetPath);
   }
 

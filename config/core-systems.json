@@ -7,7 +7,7 @@
       "type": "bundled",
       "source": {
         "type": "bundled",
-        "path": "resources"
+        "path": ".bmad-core"
       },
       "agentCount": 11,
       "features": [
