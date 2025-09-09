@@ -513,8 +513,6 @@ The agent has deep knowledge of modern data engineering practices and can provid
     // Instead, create symbolic links for backward compatibility ONLY
     
     const coreSystemPath = path.join(this.lcagentsPath, 'core', coreSystemName);
-    console.log('DEBUG LayerManager: Creating backward compatibility resolution');
-    console.log('DEBUG LayerManager: Core system path:', coreSystemPath);
     
     const resourceTypes = [
       'agents', 'tasks', 'templates', 'checklists', 
@@ -525,27 +523,16 @@ The agent has deep knowledge of modern data engineering practices and can provid
       const sourcePath = path.join(coreSystemPath, resourceType);
       const targetPath = path.join(this.lcagentsPath, resourceType);
 
-      console.log(`DEBUG LayerManager: Processing ${resourceType}`);
-      console.log(`DEBUG LayerManager: Source: ${sourcePath}`);
-      console.log(`DEBUG LayerManager: Target: ${targetPath}`);
-
       if (await fs.pathExists(sourcePath)) {
-        console.log(`DEBUG LayerManager: Source exists for ${resourceType}`);
-        
         // Remove existing directory if it exists
         if (await fs.pathExists(targetPath)) {
-          console.log(`DEBUG LayerManager: Removing existing ${targetPath}`);
           await fs.remove(targetPath);
         }
         
         // Create symbolic link for backward compatibility
         // This ensures tools looking in root .lcagents/ can still find resources
         // but they're actually resolved from the layered structure
-        console.log(`DEBUG LayerManager: Creating symlink ${sourcePath} -> ${targetPath}`);
         await fs.ensureSymlink(sourcePath, targetPath);
-        console.log(`DEBUG LayerManager: Symlink created for ${resourceType}`);
-      } else {
-        console.log(`DEBUG LayerManager: Source does not exist for ${resourceType}`);
       }
     }
 
@@ -566,7 +553,6 @@ The agent has deep knowledge of modern data engineering practices and can provid
       await fs.ensureSymlink(coreConfigSource, coreConfigTarget);
     }
 
-    console.log('DEBUG LayerManager: Backward compatibility resolution completed');
     // Note: This is temporary backward compatibility only
     // After LCA-004, all resource access should go through LayerManager resolution
   }
