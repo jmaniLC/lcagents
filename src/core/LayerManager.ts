@@ -509,8 +509,11 @@ The agent has deep knowledge of modern data engineering practices and can provid
    * Create backward compatibility symlinks/resolved resources
    */
   async createBackwardCompatibilityResolution(coreSystemName: string): Promise<void> {
+    // DO NOT COPY FILES - this violates layered architecture
+    // Instead, create symbolic links for backward compatibility ONLY
+    
     const coreSystemPath = path.join(this.lcagentsPath, 'core', coreSystemName);
-
+    
     const resourceTypes = [
       'agents', 'tasks', 'templates', 'checklists', 
       'data', 'utils', 'workflows', 'agent-teams'
@@ -521,21 +524,111 @@ The agent has deep knowledge of modern data engineering practices and can provid
       const targetPath = path.join(this.lcagentsPath, resourceType);
 
       if (await fs.pathExists(sourcePath)) {
-        // Copy resources to root level for backward compatibility
-        await fs.copy(sourcePath, targetPath);
+        // Remove existing directory if it exists
+        if (await fs.pathExists(targetPath)) {
+          await fs.remove(targetPath);
+        }
+        
+        // Create symbolic link for backward compatibility
+        // This ensures tools looking in root .lcagents/ can still find resources
+        // but they're actually resolved from the layered structure
+        await fs.ensureSymlink(sourcePath, targetPath);
       }
     }
 
-    // Create config directory with default files
-    await fs.ensureDir(path.join(this.lcagentsPath, 'config'));
+    // Create config directory with symbolic links, not copies
+    const configDir = path.join(this.lcagentsPath, 'config');
+    await fs.ensureDir(configDir);
     
-    // Copy core-config.yaml if it exists
+    // Create symbolic link to core-config.yaml if it exists
     const coreConfigSource = path.join(coreSystemPath, 'core-config.yaml');
-    const coreConfigTarget = path.join(this.lcagentsPath, 'config', 'core-config.yaml');
+    const coreConfigTarget = path.join(configDir, 'core-config.yaml');
     
     if (await fs.pathExists(coreConfigSource)) {
-      await fs.copy(coreConfigSource, coreConfigTarget);
+      // Remove existing file/link
+      if (await fs.pathExists(coreConfigTarget)) {
+        await fs.remove(coreConfigTarget);
+      }
+      // Create symbolic link
+      await fs.ensureSymlink(coreConfigSource, coreConfigTarget);
     }
+
+    // Note: This is temporary backward compatibility only
+    // After LCA-004, all resource access should go through LayerManager resolution
+  }
+
+  /**
+   * Runtime resource resolution with layer precedence (custom > org > core)
+   * This is the primary method for LCA-004 resource lookup
+   */
+  async resolveResourcePath(resourceType: string, resourceName: string): Promise<string | null> {
+    const layers = ['custom', 'org', 'core'];
+    
+    // Get active core system
+    const activeCore = await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCore) {
+      return null;
+    }
+
+    // Check each layer in precedence order
+    for (const layer of layers) {
+      let layerPath: string;
+      
+      if (layer === 'core') {
+        layerPath = path.join(this.lcagentsPath, 'core', activeCore, resourceType);
+      } else {
+        layerPath = path.join(this.lcagentsPath, layer, resourceType);
+      }
+      
+      const resourcePath = path.join(layerPath, resourceName);
+      
+      if (await fs.pathExists(resourcePath)) {
+        return resourcePath;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get all available resources of a type with layer precedence
+   */
+  async getAvailableResources(resourceType: string): Promise<Array<{name: string, source: string, path: string}>> {
+    const resources = new Map<string, {name: string, source: string, path: string}>();
+    const activeCore = await this.coreSystemManager.getActiveCoreSystem();
+    
+    if (!activeCore) {
+      return [];
+    }
+
+    // Check layers in reverse precedence to allow overrides
+    const layers = [
+      { name: 'core', path: path.join(this.lcagentsPath, 'core', activeCore, resourceType) },
+      { name: 'org', path: path.join(this.lcagentsPath, 'org', resourceType) },
+      { name: 'custom', path: path.join(this.lcagentsPath, 'custom', resourceType) }
+    ];
+
+    for (const layer of layers) {
+      if (await fs.pathExists(layer.path)) {
+        const files = await fs.readdir(layer.path);
+        
+        for (const file of files) {
+          const fullPath = path.join(layer.path, file);
+          const stats = await fs.lstat(fullPath);
+          
+          if (stats.isFile()) {
+            // Higher precedence layers override lower ones
+            resources.set(file, {
+              name: file,
+              source: layer.name,
+              path: fullPath
+            });
+          }
+        }
+      }
+    }
+
+    return Array.from(resources.values());
   }
 
   /**

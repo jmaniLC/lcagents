@@ -1,6 +1,6 @@
 {
   "name": "@lendingclub/lcagents",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "LendingClub Internal Agent System - Distributed BMAD-Core Agents for GitHub Copilot",
   "main": "dist/index.js",
   "bin": {
@@ -17,6 +17,7 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "dev": "npm run build && node dist/cli/index.js",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test",
     "prepack": "npm run build && npm test"
   },
