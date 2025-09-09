@@ -188,7 +188,7 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
             }
             // Step 4: Create layered directory structure
             spinner.text = 'Creating layered architecture...';
-            await layerManager.createLayeredStructure(coreSystemName);
+            await layerManager.createLayeredStructure();
             // Step 5: Create backward compatibility resolution
             spinner.text = 'Setting up backward compatibility...';
             await layerManager.createVirtualResolutionSystem(coreSystemName);

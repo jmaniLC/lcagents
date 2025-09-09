@@ -81,7 +81,7 @@ coreCommand
       }
 
       // Create layered structure for new core system
-      await layerManager.createLayeredStructure(name);
+      await layerManager.createLayeredStructure();
 
       spinner.succeed(`Successfully installed ${name} v${result.version}`);
       

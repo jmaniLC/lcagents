@@ -282,9 +282,8 @@ export class LayerManager implements ResourceResolver {
   /**
    * Create the layered directory structure
    */
-  async createLayeredStructure(coreSystemName: string): Promise<void> {
-    // Create base directories
-    await fs.ensureDir(path.join(this.lcagentsPath, 'core', coreSystemName));
+  async createLayeredStructure(): Promise<void> {
+    // Create base directories (core directory is created by CoreSystemManager with dot prefix)
     await fs.ensureDir(path.join(this.lcagentsPath, 'org'));
     await fs.ensureDir(path.join(this.lcagentsPath, 'custom'));
     await fs.ensureDir(path.join(this.lcagentsPath, 'runtime'));
@@ -782,7 +781,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
     }
 
     // Create new layered structure
-    await this.createLayeredStructure(coreSystemName);
+    await this.createLayeredStructure();
 
     // Set up virtual resolution system (no symlinks)
     await this.createVirtualResolutionSystem(coreSystemName);
