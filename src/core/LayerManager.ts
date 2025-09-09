@@ -524,12 +524,19 @@ The agent has deep knowledge of modern data engineering practices and can provid
   /**
    * Build resolution mapping for all resources in the system
    */
-  async buildResolutionMap(coreSystemName: string): Promise<Record<string, string>> {
+  async buildResolutionMap(): Promise<Record<string, string>> {
     const resolutionMap: Record<string, string> = {};
     const resourceTypes = [
       'agents', 'tasks', 'templates', 'checklists', 
       'data', 'utils', 'workflows', 'agent-teams'
     ];
+
+    // Get active core system
+    const activeCoreSystem = await this.coreSystemManager.getActiveCoreSystem();
+    if (!activeCoreSystem) {
+      console.warn('No active core system found for building resolution map');
+      return resolutionMap;
+    }
 
     for (const resourceType of resourceTypes) {
       // Check custom layer first (highest priority)
@@ -555,15 +562,15 @@ The agent has deep knowledge of modern data engineering practices and can provid
         }
       }
 
-      // Check core layer (lowest priority)
-      const coreDir = path.join(this.lcagentsPath, 'core', coreSystemName, resourceType);
+      // Check core layer (lowest priority) - use dot-prefixed directory
+      const coreDir = path.join(this.lcagentsPath, 'core', `.${activeCoreSystem}`, resourceType);
       if (await fs.pathExists(coreDir)) {
         const coreFiles = await fs.readdir(coreDir);
         for (const file of coreFiles) {
           const key = `${resourceType}/${file}`;
           // Only add if not already resolved from custom or org layers
           if (!resolutionMap[key]) {
-            resolutionMap[key] = path.join('core', coreSystemName, resourceType, file);
+            resolutionMap[key] = path.join('core', `.${activeCoreSystem}`, resourceType, file);
           }
         }
       }
@@ -582,11 +589,11 @@ The agent has deep knowledge of modern data engineering practices and can provid
     // Access is provided through virtual resolution API
     
     console.log(`🔧 Virtual Resolution: Core system '${coreSystemName}' resources available via LayerManager API`);
-    console.log(`📁 Physical location: ${path.join(this.lcagentsPath, 'core', coreSystemName)}`);
+    console.log(`📁 Physical location: ${path.join(this.lcagentsPath, 'core', `.${coreSystemName}`)}`);
     console.log(`🔍 Access pattern: LayerManager.resolveResourcePath(type, filename)`);
     
     // Create resolution mapping for runtime cache
-    const resolutionMap = await this.buildResolutionMap(coreSystemName);
+    const resolutionMap = await this.buildResolutionMap();
     const runtimeDir = path.join(this.lcagentsPath, 'runtime');
     await fs.ensureDir(runtimeDir);
     
@@ -598,7 +605,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
     await fs.ensureDir(configDir);
     
     // Copy core-config.yaml if it exists (this is configuration, not a resource)
-    const coreConfigSource = path.join(this.lcagentsPath, 'core', coreSystemName, 'core-config.yaml');
+    const coreConfigSource = path.join(this.lcagentsPath, 'core', `.${coreSystemName}`, 'core-config.yaml');
     const coreConfigTarget = path.join(configDir, 'core-config.yaml');
     
     if (await fs.pathExists(coreConfigSource)) {
