@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { LayerManager } from './LayerManager';
+// import { LayerManager } from './LayerManager';
 
 export interface CopilotInstructionsConfig {
   projectPath: string;
@@ -14,11 +14,11 @@ export interface CopilotInstructionsConfig {
 
 export class GitHubCopilotManager {
   private readonly projectPath: string;
-  private readonly layerManager: LayerManager;
+//   private readonly layerManager: LayerManager;
 
   constructor(projectPath: string) {
     this.projectPath = projectPath;
-    this.layerManager = new LayerManager(projectPath);
+    // this.layerManager = new LayerManager(projectPath);
   }
 
   /**
@@ -84,9 +84,6 @@ export class GitHubCopilotManager {
    * Generate the LCAgents section for copilot instructions
    */
   private async generateLCAgentsSection(config: CopilotInstructionsConfig): Promise<string> {
-    // Get available agents from the layered system
-    const availableAgents = await this.getAvailableAgents();
-    
     const section = [
       '# GitHub Copilot Instructions',
       '',
@@ -96,17 +93,11 @@ export class GitHubCopilotManager {
       '',
       '### Available LCAgents',
       '',
-      ...availableAgents.map(agent => `- **@${agent.id}**: ${agent.description}`),
-      '',
-      '### Usage Patterns',
-      '',
-      '**Agent Activation:**',
-      '```',
-      '@lcagents activate <agent-name>',
-      '```',
+      'Look at .lcagents/ directory for available agents and their configurations.',
       '',
       '**Quick Commands:**',
       '```',
+      '*agent         # Show list of all agents',
       '*help          # Show agent-specific commands',
       '*status        # Show current context and progress',
       '*context       # Display project context',
@@ -124,18 +115,6 @@ export class GitHubCopilotManager {
         `**Technology Stack:** ${config.techStack.join(', ')}`,
         ''
       ] : []),
-      '### Agent-Specific Guidelines',
-      '',
-      '**When working with LCAgents:**',
-      '- Use agent-specific commands prefixed with `*`',
-      '- Leverage agent context for domain-specific assistance',
-      '- Follow established workflows and templates',
-      '- Maintain consistency with pod-specific standards',
-      '',
-      '**Integration with GitHub Copilot:**',
-      '- LCAgents provide specialized personas and workflows',
-      '- GitHub Copilot provides code completion and general assistance',
-      '- Use both tools complementarily for optimal development experience',
       '',
       '---',
       ''
@@ -144,68 +123,6 @@ export class GitHubCopilotManager {
     return section.join('\n');
   }
 
-  /**
-   * Get available agents from the layered system
-   */
-  private async getAvailableAgents(): Promise<Array<{ id: string; description: string }>> {
-    const agents: Array<{ id: string; description: string }> = [];
-    
-    try {
-      // Get agents from runtime resolution
-      const agentTypes = ['pm', 'dev', 'qa', 'em', 'architect', 'data-engineer', 'devops', 'designer', 'tester', 'analyst', 'security'];
-      
-      for (const agentType of agentTypes) {
-        const agentPath = await this.layerManager.resolveResourcePath('agents', `${agentType}.md`);
-        if (agentPath) {
-          agents.push({
-            id: agentType,
-            description: this.getAgentDescription(agentType)
-          });
-        }
-      }
-      
-      // If no agents found, provide defaults
-      if (agents.length === 0) {
-        return [
-          { id: 'pm', description: 'Product Manager - Requirements, PRDs, and project planning' },
-          { id: 'dev', description: 'Developer - Code implementation and technical guidance' },
-          { id: 'qa', description: 'Quality Assurance - Testing strategies and quality validation' },
-          { id: 'em', description: 'Engineering Manager - Team coordination and technical leadership' },
-          { id: 'architect', description: 'System Architect - Design patterns and architecture decisions' }
-        ];
-      }
-      
-      return agents;
-    } catch (error) {
-      console.warn('Could not resolve agents, using defaults:', error);
-      return [
-        { id: 'pm', description: 'Product Manager - Requirements, PRDs, and project planning' },
-        { id: 'dev', description: 'Developer - Code implementation and technical guidance' },
-        { id: 'qa', description: 'Quality Assurance - Testing strategies and quality validation' }
-      ];
-    }
-  }
-
-  /**
-   * Get description for a specific agent type
-   */
-  private getAgentDescription(agentType: string): string {
-    const descriptions: Record<string, string> = {
-      'pm': 'Product Manager - Requirements, PRDs, and project planning',
-      'dev': 'Developer - Code implementation and technical guidance',
-      'qa': 'Quality Assurance - Testing strategies and quality validation',
-      'em': 'Engineering Manager - Team coordination and technical leadership',
-      'architect': 'System Architect - Design patterns and architecture decisions',
-      'data-engineer': 'Data Engineer - Data pipelines and analytics workflows',
-      'devops': 'DevOps Engineer - Deployment, infrastructure, and CI/CD',
-      'designer': 'UX/UI Designer - User experience and interface design',
-      'tester': 'Test Engineer - Test automation and quality validation',
-      'analyst': 'Business Analyst - Requirements analysis and process optimization',
-      'security': 'Security Engineer - Security best practices and vulnerability assessment'
-    };
-    
-    return descriptions[agentType] || `${agentType} - Specialized development assistant`;
-  }
 
   /**
    * Remove existing LCAgents section from content
