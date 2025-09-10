@@ -1,7 +1,7 @@
 {
   "name": "@lendingclub/lcagents",
   "version": "2.2.0",
-  "description": "LendingClub Internal Agent System - Distributed BMAD-Core Agents for GitHub Copilot",
+  "description": "LendingClub Internal AI Agent System",
   "main": "dist/index.js",
   "bin": {
     "lcagents": "dist/cli/index.js"
@@ -78,9 +78,6 @@
     "INSTALL.md",
     "USAGE.md"
   ],
-  "publishConfig": {
-    "access": "restricted"
-  },
   "lendingclub": {
     "internal": true,
     "team": "engineering",
