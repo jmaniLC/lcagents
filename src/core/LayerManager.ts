@@ -653,10 +653,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
           await this.runtimeConfigManager.updateConfig(runtimeUpdates);
         }
         
-        // Remove the core-config.yaml file since its values are now in runtime-config.yaml
-        // This eliminates configuration duplication
-        await fs.remove(coreConfigPath);
-        console.log(`🧹 Cleaned up redundant core-config.yaml (values extracted to runtime-config.yaml)`);
+        console.log(`🔧 Core system configuration values extracted to runtime-config.yaml`);
         
       } catch (error) {
         console.warn(`Failed to process core config from ${coreSystemName}:`, error);
