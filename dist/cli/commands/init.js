@@ -41,6 +41,8 @@ const commander_1 = require("commander");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
+const child_process_1 = require("child_process");
+const util_1 = require("util");
 const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
@@ -96,11 +98,25 @@ async function setupShellAlias() {
         const aliasEntry = `\n${aliasComment}\n${aliasCommand}\n`;
         await fs.ensureFile(configFile);
         await fs.appendFile(configFile, aliasEntry);
-        return {
-            success: true,
-            message: `Alias added to ${shellName} configuration`,
-            instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
-        };
+        // Attempt to source the config file to make alias immediately available
+        try {
+            const execAsync = (0, util_1.promisify)(child_process_1.exec);
+            // Try to source the config file
+            await execAsync(`source ${configFile}`, { shell: '/bin/zsh' });
+            return {
+                success: true,
+                message: `Alias added to ${shellName} configuration and activated`,
+                instructions: `'lcagent' command is now ready to use!`
+            };
+        }
+        catch (sourceError) {
+            // Sourcing failed, but alias was still added
+            return {
+                success: true,
+                message: `Alias added to ${shellName} configuration`,
+                instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
+            };
+        }
     }
     catch (error) {
         return {

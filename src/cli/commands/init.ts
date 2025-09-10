@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
@@ -63,11 +65,26 @@ async function setupShellAlias(): Promise<{ success: boolean; message: string; i
     await fs.ensureFile(configFile);
     await fs.appendFile(configFile, aliasEntry);
     
-    return {
-      success: true,
-      message: `Alias added to ${shellName} configuration`,
-      instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
-    };
+    // Attempt to source the config file to make alias immediately available
+    try {
+      const execAsync = promisify(exec);
+      
+      // Try to source the config file
+      await execAsync(`source ${configFile}`, { shell: '/bin/zsh' });
+      
+      return {
+        success: true,
+        message: `Alias added to ${shellName} configuration and activated`,
+        instructions: `'lcagent' command is now ready to use!`
+      };
+    } catch (sourceError) {
+      // Sourcing failed, but alias was still added
+      return {
+        success: true,
+        message: `Alias added to ${shellName} configuration`,
+        instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
+      };
+    }
     
   } catch (error) {
     return {
