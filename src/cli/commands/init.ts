@@ -9,14 +9,14 @@ import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
 import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
 import { InstallationOptions, InstallationResult } from '../../types/CoreSystem';
-import { analyzeTechStack, generateTechStackReport, TechStackData } from '../../utils/techStacker';
+import { analyzeTechStack, generateTechStackReport, TechStackData, selectPod } from '../../utils/techStacker';
 
 /**
- * Ask user for installation directory and analyze tech stack
+ * Ask user for installation directory
  */
-async function selectInstallationDirectory(): Promise<{ installPath: string; techStackData: TechStackData }> {
+async function selectInstallationDirectory(): Promise<string> {
   console.log(chalk.blue('\n🎯 LCAgents Installation Setup'));
-  console.log(chalk.gray('First, let\'s determine where to install LCAgents and analyze your project\'s tech stack.\n'));
+  console.log(chalk.gray('First, let\'s determine where to install LCAgents.\n'));
 
   const { installChoice } = await inquirer.prompt([
     {
@@ -59,44 +59,110 @@ async function selectInstallationDirectory(): Promise<{ installPath: string; tec
   }
 
   console.log(chalk.gray(`\n📍 Selected installation path: ${installPath}`));
+  return installPath;
+}
 
-  // Analyze tech stack
-  const spinner = ora('🔍 Analyzing project structure and technology stack...').start();
+/**
+ * Validate directory for LCAgents installation
+ */
+async function validateInstallationDirectory(installPath: string): Promise<void> {
+  const spinner = ora('🔍 Validating directory structure...').start();
   
   try {
-    const techStackData = await analyzeTechStack(installPath);
-    
-    if (techStackData.isEmpty) {
+    // Check if directory exists
+    if (!await fs.pathExists(installPath)) {
+      spinner.fail(chalk.red('Directory does not exist'));
+      console.log(chalk.red(`❌ The specified directory does not exist: ${installPath}`));
+      process.exit(1);
+    }
+
+    // Check if directory is readable
+    try {
+      await fs.access(installPath, fs.constants.R_OK);
+    } catch (error) {
+      spinner.fail(chalk.red('Directory is not readable'));
+      console.log(chalk.red(`❌ Cannot read directory: ${installPath}`));
+      process.exit(1);
+    }
+
+    // Check if directory has any files (empty directory check)
+    const files = await fs.readdir(installPath);
+    if (files.length === 0) {
       spinner.fail(chalk.red('Directory is empty'));
-      console.log(chalk.yellow(`\n⚠️  ${techStackData.message}`));
+      console.log(chalk.yellow(`\n⚠️  The selected directory is empty.`));
       console.log(chalk.gray('Please select a directory with source code files to proceed with installation.\n'));
       process.exit(1);
     }
 
+    // Check for basic project indicators (at least some code files should exist)
+    const codeFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return ['.js', '.ts', '.py', '.java', '.go', '.rb', '.php', '.cs', '.cpp', '.c', '.json', '.yaml', '.yml', '.md'].includes(ext);
+    });
+
+    if (codeFiles.length === 0) {
+      spinner.fail(chalk.red('No source files detected'));
+      console.log(chalk.yellow(`\n⚠️  No recognizable source code files found in directory.`));
+      console.log(chalk.gray('Please select a directory that contains a software project.\n'));
+      process.exit(1);
+    }
+
+    spinner.succeed(chalk.green('Directory validation completed'));
+    console.log(chalk.green(`✅ Directory is suitable for LCAgents installation`));
+    console.log(chalk.gray(`   Found ${files.length} files including ${codeFiles.length} source files\n`));
+    
+  } catch (error) {
+    spinner.fail(chalk.red('Failed to validate directory'));
+    console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+    process.exit(1);
+  }
+}
+
+/**
+ * Get pod information from user
+ */
+async function getPodInformation(): Promise<{ name: string; id: string; owner: string }> {
+  console.log(chalk.blue('🏢 Pod Assignment'));
+  console.log(chalk.gray('Assign this repository to an organizational pod for better management.\n'));
+  
+  return await selectPod();
+}
+
+/**
+ * Analyze tech stack and get repository information
+ */
+async function analyzeTechStackWithContext(installPath: string, podInfo: { name: string; id: string; owner: string }): Promise<TechStackData> {
+  const spinner = ora('🔍 Analyzing project technology stack...').start();
+  
+  try {
+    // Set pod context before analysis
+    const techStackData = await analyzeTechStack(installPath, podInfo);
+    
     if (techStackData.noTechStack) {
-      spinner.fail(chalk.red('No technology stack detected'));
+      spinner.warn(chalk.yellow('Limited technology stack detected'));
       console.log(chalk.yellow(`\n⚠️  ${techStackData.message}`));
       
       const { proceedAnyway } = await inquirer.prompt([
         {
           type: 'confirm',
           name: 'proceedAnyway',
-          message: 'Would you like to proceed with installation anyway?',
+          message: 'Do you want to proceed with LCAgents installation anyway?',
           default: false
         }
       ]);
 
       if (!proceedAnyway) {
-        console.log(chalk.gray('Installation cancelled.\n'));
-        process.exit(1);
+        console.log(chalk.gray('\n👋 Installation cancelled. Please ensure your project has recognizable tech stack files.\n'));
+        process.exit(0);
       }
     } else {
       spinner.succeed(chalk.green('Tech stack analysis completed'));
-      console.log(chalk.blue('\n📊 Detected Technology Stack:'));
-      console.log(chalk.green(`   Primary: ${techStackData.primaryStack}`));
       
-      if (techStackData.allStacks.length > 1) {
-        console.log(chalk.cyan(`   Additional: ${techStackData.allStacks.slice(1).join(', ')}`));
+      console.log(chalk.blue('\n📊 Detected Technology Stack:'));
+      console.log(chalk.white(`   Primary: ${techStackData.primaryStack || techStackData.stack}`));
+      
+      if (techStackData.allStacks && techStackData.allStacks.length > 1) {
+        console.log(chalk.cyan(`   Additional: ${techStackData.allStacks.filter(s => s !== (techStackData.primaryStack || techStackData.stack)).join(', ')}`));
       }
 
       if (techStackData.frameworks.length > 0) {
@@ -107,13 +173,13 @@ async function selectInstallationDirectory(): Promise<{ installPath: string; tec
         console.log(chalk.yellow(`   Build Tools: ${techStackData.buildTools.join(', ')}`));
       }
 
-      console.log(chalk.green('\n✅ This directory is suitable for LCAgents installation!'));
+      console.log(chalk.green('\n✅ Technology stack analysis completed!'));
     }
 
-    return { installPath, techStackData };
+    return techStackData;
 
   } catch (error) {
-    spinner.fail(chalk.red('Failed to analyze directory'));
+    spinner.fail(chalk.red('Failed to analyze tech stack'));
     console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   }
@@ -234,9 +300,18 @@ export const initCommand = new Command('init')
     const spinner = ora('Initializing LCAgents...').start();
     
     try {
-      // Step 1: Select installation directory and analyze tech stack
+      // Step 1: Get directory
       spinner.stop();
-      const { installPath, techStackData } = await selectInstallationDirectory();
+      const installPath = await selectInstallationDirectory();
+      
+      // Step 2: Validate directory source (if error, fail the installer)
+      await validateInstallationDirectory(installPath);
+      
+      // Step 3: Get the pod name  
+      const podInfo = await getPodInformation();
+      
+      // Step 4: Analyze tech stack
+      const techStackData = await analyzeTechStackWithContext(installPath, podInfo);
       
       const lcagentsDir = path.join(installPath, '.lcagents');
       
@@ -333,6 +408,9 @@ export const initCommand = new Command('init')
         skipGithub: !options.github,
         template: options.template
       };
+
+      // Stop the setup spinner before starting installation
+      spinner.stop();
 
       const result = await performLayeredInstallation(
         installPath,
@@ -438,6 +516,10 @@ export const initCommand = new Command('init')
       console.log(chalk.dim('For help: lcagents --help or lcagent --help'));
       
     } catch (error) {
+      // Make sure any running spinner is stopped
+      if (spinner) {
+        spinner.stop();
+      }
       console.log(chalk.red('❌ Failed to initialize LCAgents'));
       console.error(chalk.red('Error:'), error);
       process.exit(1);

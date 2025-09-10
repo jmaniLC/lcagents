@@ -78,7 +78,7 @@ export interface TechStackData {
 /**
  * Allows user to select pod or add a new one
  */
-async function selectPod(): Promise<{ name: string; id: string; owner: string }> {
+export async function selectPod(): Promise<{ name: string; id: string; owner: string }> {
     const podConfig = await loadPodConfiguration();
     
     // Build choices array from configuration
@@ -142,14 +142,23 @@ async function selectPod(): Promise<{ name: string; id: string; owner: string }>
     }
 }
 
-export async function analyzeTechStack(workspacePath: string): Promise<TechStackData> {
+export async function analyzeTechStack(
+    workspacePath: string, 
+    providedPodInfo?: { name: string; id: string; owner: string }
+): Promise<TechStackData> {
     // Helper function to generate pod and repository information
     const generatePodInfo = async (workspacePath: string) => {
         const repoName = path.basename(workspacePath);
         
-        // Interactive pod selection
-        const podInfo = await selectPod();
-        const { name: podName, id: podId, owner } = podInfo;
+        // Use provided pod info or interactive selection
+        let selectedPod;
+        if (providedPodInfo) {
+            selectedPod = providedPodInfo;
+        } else {
+            selectedPod = await selectPod();
+        }
+        
+        const { name: podName, id: podId, owner } = selectedPod;
         
         return {
             pod: {
