@@ -67,16 +67,19 @@ async function setupShellAlias(): Promise<{ success: boolean; message: string; i
     await fs.appendFile(configFile, aliasEntry);
     
     // Attempt to source the config file to make aliases immediately available
+    // Note: This will work in some environments but not others due to process isolation
     try {
       const execAsync = promisify(exec);
       
       // Try to source the config file
       await execAsync(`source ${configFile}`, { shell: '/bin/zsh' });
       
+      // The source command succeeded, but it only affects the child process
+      // The aliases won't be available in the current terminal session
       return {
         success: true,
-        message: `Aliases added to ${shellName} configuration and activated`,
-        instructions: `'lcagent' and 'lcagents' commands are now ready to use!`
+        message: `Aliases added to ${shellName} configuration`,
+        instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
       };
     } catch (sourceError) {
       // Sourcing failed, but aliases were still added
@@ -234,7 +237,7 @@ export const initCommand = new Command('init')
         if (aliasResult.instructions) {
           console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
         }
-        console.log(chalk.white('   Now you can use:'), chalk.cyan('lcagent <command>'), chalk.dim('or'), chalk.cyan('lcagents <command>'));
+        console.log(chalk.white('   Available commands:'), chalk.cyan('lcagent <command>'), chalk.dim('or'), chalk.cyan('lcagents <command>'));
         console.log();
       } else {
         console.log(chalk.yellow('⚠️  Shell Alias Setup:'));
