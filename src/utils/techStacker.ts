@@ -1,6 +1,45 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as glob from 'glob';
+import * as inquirer from 'inquirer';
+
+// Pod configuration interface
+interface PodConfig {
+    name: string;
+    id: string;
+    owner: string;
+    description: string;
+}
+
+interface PodsConfiguration {
+    pods: PodConfig[];
+    allowCustomPods: boolean;
+    customPodOption: {
+        name: string;
+        description: string;
+    };
+}
+
+/**
+ * Load pod configuration from config file
+ */
+async function loadPodConfiguration(): Promise<PodsConfiguration> {
+    try {
+        const configPath = path.join(__dirname, '../../config/pods.json');
+        const configContent = await fs.readFile(configPath, 'utf-8');
+        return JSON.parse(configContent) as PodsConfiguration;
+    } catch (error) {
+        console.warn('Warning: Could not load pod configuration, using fallback list');
+        // Fallback configuration if file is not found
+        return {
+            pods: [
+                { name: 'Default Pod', id: 'default-pod', owner: 'team-default', description: 'Default development pod' }
+            ],
+            allowCustomPods: true,
+            customPodOption: { name: 'Other - Add new pod', description: 'Create a new pod' }
+        };
+    }
+}
 
 export interface TechStackData {
   stack: string;
@@ -17,9 +56,120 @@ export interface TechStackData {
   noTechStack: boolean;
   error?: string;
   message?: string;
+  // Pod and repository information
+  pod: {
+    id: string;
+    name: string;
+    description: string;
+    owner: string;
+    createdAt: string;
+    repositoryCount: number;
+  };
+  repository: {
+    name: string;
+    path: string;
+    url?: string;
+    branch: string;
+    lastAnalyzed: string;
+    isMainRepo: boolean;
+  };
+}
+
+/**
+ * Allows user to select pod or add a new one
+ */
+async function selectPod(): Promise<{ name: string; id: string; owner: string }> {
+    const podConfig = await loadPodConfiguration();
+    
+    // Build choices array from configuration
+    const choices = podConfig.pods.map(pod => pod.name);
+    if (podConfig.allowCustomPods) {
+        choices.push(podConfig.customPodOption.name);
+    }
+
+    const answer = await inquirer.prompt({
+        type: 'list',
+        name: 'selectedPod',
+        message: 'Which pod does this repository belong to?',
+        choices: choices,
+        pageSize: 15
+    });
+
+    const selectedPod = answer.selectedPod;
+
+    if (selectedPod === podConfig.customPodOption.name) {
+        const customAnswer = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'podName',
+                message: 'Enter the new pod name:',
+                validate: (input) => input.trim().length > 0 || 'Pod name cannot be empty'
+            },
+            {
+                type: 'input',
+                name: 'podOwner',
+                message: 'Enter the pod owner/team:',
+                validate: (input) => input.trim().length > 0 || 'Pod owner cannot be empty'
+            }
+        ]);
+
+        return {
+            name: customAnswer.podName.trim(),
+            id: customAnswer.podName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            owner: customAnswer.podOwner.trim()
+        };
+    } else {
+        // Find the selected pod in configuration
+        const selectedPodConfig = podConfig.pods.find(pod => pod.name === selectedPod);
+        
+        if (selectedPodConfig) {
+            return {
+                name: selectedPodConfig.name,
+                id: selectedPodConfig.id,
+                owner: selectedPodConfig.owner
+            };
+        } else {
+            // Fallback for backward compatibility
+            const parts = selectedPod.split(' - ');
+            const teamName = parts[0];
+            
+            return {
+                name: selectedPod,
+                id: selectedPod.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                owner: teamName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+            };
+        }
+    }
 }
 
 export async function analyzeTechStack(workspacePath: string): Promise<TechStackData> {
+    // Helper function to generate pod and repository information
+    const generatePodInfo = async (workspacePath: string) => {
+        const repoName = path.basename(workspacePath);
+        
+        // Interactive pod selection
+        const podInfo = await selectPod();
+        const { name: podName, id: podId, owner } = podInfo;
+        
+        return {
+            pod: {
+                id: podId,
+                name: podName,
+                description: `Development pod for ${podName} and related repositories`,
+                owner: owner,
+                createdAt: new Date().toISOString(),
+                repositoryCount: 3 // Dummy value - could have main repo, docs repo, config repo
+            },
+            repository: {
+                name: repoName,
+                path: workspacePath,
+                url: `https://github.com/company/${repoName.toLowerCase()}`, // Dummy URL
+                branch: 'main',
+                lastAnalyzed: new Date().toISOString(),
+                isMainRepo: true
+            }
+        };
+    };
     // Helper function to find files matching a pattern
     const find = async (pattern: string): Promise<Array<{ fsPath: string }>> => {
         return new Promise((resolve, reject) => {
@@ -67,6 +217,7 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
         const dirContents = await fs.readdir(workspacePath);
         if (dirContents.length === 0) {
             console.log('❌ Directory is empty - cannot analyze tech stack');
+            const podInfo = await generatePodInfo(workspacePath);
             return { 
                 isEmpty: true, 
                 noTechStack: false,
@@ -80,11 +231,13 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
                 databases: [],
                 deployment: [],
                 primaryStack: '',
-                workspacePath
+                workspacePath,
+                ...podInfo
             };
         }
     } catch (error) {
         console.log('❌ Directory access error:', error instanceof Error ? error.message : String(error));
+        const podInfo = await generatePodInfo(workspacePath);
         return { 
             isEmpty: true, 
             noTechStack: false,
@@ -98,7 +251,8 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
             databases: [],
             deployment: [],
             primaryStack: '',
-            workspacePath
+            workspacePath,
+            ...podInfo
         };
     }
 
@@ -424,6 +578,7 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
         console.log('  2. The project files are in subdirectories not being scanned');
         console.log('  3. The project structure is non-standard');
         console.log('  4. The directory contains non-code files only');
+        const podInfo = await generatePodInfo(workspacePath);
         return { 
             isEmpty: false, 
             noTechStack: true,
@@ -437,7 +592,8 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
             databases: [],
             deployment: [],
             primaryStack: '',
-            workspacePath
+            workspacePath,
+            ...podInfo
         };
     }
 
@@ -451,6 +607,7 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
         finalStack += ` (${additionalTechs.join(', ')})`;
     }
 
+    const podInfo = await generatePodInfo(workspacePath);
     return { 
         stack: finalStack, 
         allStacks: detectedStacks, 
@@ -463,7 +620,8 @@ export async function analyzeTechStack(workspacePath: string): Promise<TechStack
         primaryStack: primaryStack || '',
         workspacePath,
         isEmpty: false,
-        noTechStack: false
+        noTechStack: false,
+        ...podInfo
     };
 }
 
@@ -479,6 +637,22 @@ export function generateTechStackReport(techStackData: TechStackData): string | 
 
 Generated on: ${new Date().toISOString()}
 Workspace: ${techStackData.workspacePath}
+
+## Pod Information
+**Pod ID**: ${techStackData.pod.id}  
+**Pod Name**: ${techStackData.pod.name}  
+**Description**: ${techStackData.pod.description}  
+**Owner**: ${techStackData.pod.owner}  
+**Created**: ${techStackData.pod.createdAt}  
+**Repository Count**: ${techStackData.pod.repositoryCount}  
+
+## Repository Information
+**Repository Name**: ${techStackData.repository.name}  
+**Path**: ${techStackData.repository.path}  
+**URL**: ${techStackData.repository.url || 'Not specified'}  
+**Branch**: ${techStackData.repository.branch}  
+**Last Analyzed**: ${techStackData.repository.lastAnalyzed}  
+**Main Repository**: ${techStackData.repository.isMainRepo ? 'Yes' : 'No'}  
 
 ## Primary Technology Stack
 ${techStackData.primaryStack}

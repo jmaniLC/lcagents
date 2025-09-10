@@ -181,6 +181,23 @@ export interface RuntimeConfig {
     databases: string[];        // Database technologies
     deployment: string[];       // Deployment technologies
     analyzedAt: string;         // When analysis was performed
+    // Pod and repository context
+    pod: {
+      id: string;               // Pod identifier
+      name: string;             // Pod name
+      description: string;      // Pod description
+      owner: string;            // Pod owner/team
+      createdAt: string;        // Pod creation date
+      repositoryCount: number;  // Number of repositories in this pod
+    };
+    repository: {
+      name: string;             // Repository name
+      path: string;             // Repository path
+      url?: string;             // Repository URL
+      branch: string;           // Current branch
+      lastAnalyzed: string;     // Last analysis timestamp
+      isMainRepo: boolean;      // Is this the main repository for the pod
+    };
   };
 
   // Metadata

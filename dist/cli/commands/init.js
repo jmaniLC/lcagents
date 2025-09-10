@@ -349,7 +349,9 @@ exports.initCommand = new commander_1.Command('init')
                     packageManagers: techStackData.packageManagers,
                     databases: techStackData.databases,
                     deployment: techStackData.deployment,
-                    analyzedAt: new Date().toISOString()
+                    analyzedAt: new Date().toISOString(),
+                    pod: techStackData.pod,
+                    repository: techStackData.repository
                 }
             });
             // Generate and save tech stack report
@@ -369,6 +371,10 @@ exports.initCommand = new commander_1.Command('init')
             if (techStackData.frameworks.length > 0) {
                 console.log(chalk_1.default.cyan(`   Frameworks: ${techStackData.frameworks.join(', ')}`));
             }
+            console.log(chalk_1.default.blue('🏢 Pod Information:'));
+            console.log(chalk_1.default.white(`   Pod: ${techStackData.pod.name} (${techStackData.pod.id})`));
+            console.log(chalk_1.default.white(`   Owner: ${techStackData.pod.owner}`));
+            console.log(chalk_1.default.white(`   Repository: ${techStackData.repository.name} (${techStackData.repository.isMainRepo ? 'Main' : 'Secondary'})`));
             console.log(chalk_1.default.green('   ✅ Tech stack preferences saved to technical-preferences.md'));
             console.log();
         }

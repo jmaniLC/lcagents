@@ -358,7 +358,9 @@ export const initCommand = new Command('init')
             packageManagers: techStackData.packageManagers,
             databases: techStackData.databases,
             deployment: techStackData.deployment,
-            analyzedAt: new Date().toISOString()
+            analyzedAt: new Date().toISOString(),
+            pod: techStackData.pod,
+            repository: techStackData.repository
           }
         });
 
@@ -381,6 +383,10 @@ export const initCommand = new Command('init')
         if (techStackData.frameworks.length > 0) {
           console.log(chalk.cyan(`   Frameworks: ${techStackData.frameworks.join(', ')}`));
         }
+        console.log(chalk.blue('🏢 Pod Information:'));
+        console.log(chalk.white(`   Pod: ${techStackData.pod.name} (${techStackData.pod.id})`));
+        console.log(chalk.white(`   Owner: ${techStackData.pod.owner}`));
+        console.log(chalk.white(`   Repository: ${techStackData.repository.name} (${techStackData.repository.isMainRepo ? 'Main' : 'Secondary'})`));
         console.log(chalk.green('   ✅ Tech stack preferences saved to technical-preferences.md'));
         console.log();
       }

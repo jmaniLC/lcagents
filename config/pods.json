@@ -1,0 +1,129 @@
+{
+  "pods": [
+    {
+      "name": "Alchemy - Deposits",
+      "id": "alchemy-deposits",
+      "owner": "team-alchemy",
+      "description": "Deposits and account management systems"
+    },
+    {
+      "name": "Alchemy - DMM DebtIQ / Debt Monitoring and Management",
+      "id": "alchemy-dmm-debtiq",
+      "owner": "team-alchemy",
+      "description": "Debt monitoring and management intelligence platform"
+    },
+    {
+      "name": "Alchemy - Lending",
+      "id": "alchemy-lending",
+      "owner": "team-alchemy",
+      "description": "Core lending platform and services"
+    },
+    {
+      "name": "CDS - Credit Decision System",
+      "id": "cds-credit-decision",
+      "owner": "team-cds",
+      "description": "Credit decisioning and risk assessment platform"
+    },
+    {
+      "name": "CURE - Consumer Core & Data",
+      "id": "cure-consumer-core",
+      "owner": "team-cure",
+      "description": "Consumer data management and core services"
+    },
+    {
+      "name": "DAP - Dynamic Application Platform",
+      "id": "dap-dynamic-app",
+      "owner": "team-dap",
+      "description": "Dynamic application processing and workflow platform"
+    },
+    {
+      "name": "MarEngg - Marketing Engineering",
+      "id": "marengg-marketing",
+      "owner": "team-marengg",
+      "description": "Marketing technology and automation platform"
+    },
+    {
+      "name": "MPUW - Multi Product Underwriting",
+      "id": "mpuw-underwriting",
+      "owner": "team-mpuw",
+      "description": "Multi-product underwriting and risk assessment"
+    },
+    {
+      "name": "Originations Core Eng - Auto Loans",
+      "id": "originations-auto-loans",
+      "owner": "team-originations",
+      "description": "Auto loan origination and processing systems"
+    },
+    {
+      "name": "Originations Core Eng - PL BE",
+      "id": "originations-pl-be",
+      "owner": "team-originations",
+      "description": "Personal loan backend origination systems"
+    },
+    {
+      "name": "PF - Purchase Finance",
+      "id": "pf-purchase-finance",
+      "owner": "team-pf",
+      "description": "Purchase financing and payment processing"
+    },
+    {
+      "name": "Platform - Engineering Efficiency (EE)",
+      "id": "platform-engineering-efficiency",
+      "owner": "team-platform",
+      "description": "Developer tools and engineering productivity platform"
+    },
+    {
+      "name": "Platform - Infra (INF)",
+      "id": "platform-infra",
+      "owner": "team-platform",
+      "description": "Infrastructure and cloud platform services"
+    },
+    {
+      "name": "Platform - Investor Servicing (INVS)",
+      "id": "platform-investor-servicing",
+      "owner": "team-platform",
+      "description": "Investor relations and servicing platform"
+    },
+    {
+      "name": "Platform - Test Infra and Automation (TIA)",
+      "id": "platform-test-infra",
+      "owner": "team-platform",
+      "description": "Testing infrastructure and automation platform"
+    },
+    {
+      "name": "UFE - UPPER FUNNEL EXP",
+      "id": "ufe-upper-funnel",
+      "owner": "team-ufe",
+      "description": "Upper funnel customer experience and acquisition"
+    },
+    {
+      "name": "UIP - UI Tools / UI Platform",
+      "id": "uip-ui-platform",
+      "owner": "team-uip",
+      "description": "User interface tools and component platform"
+    },
+    {
+      "name": "UWOPS - Underwriting Experience & Operations",
+      "id": "uwops-underwriting-ops",
+      "owner": "team-uwops",
+      "description": "Underwriting operations and experience platform"
+    },
+    {
+      "name": "WESFO - Website Strategic Foundation",
+      "id": "wesfo-website-foundation",
+      "owner": "team-wesfo",
+      "description": "Website infrastructure and strategic foundation"
+    },
+    {
+      "name": "XP - Experience Platform",
+      "id": "xp-experience-platform",
+      "owner": "team-xp",
+      "description": "Customer experience and engagement platform"
+    }
+  ],
+  "allowCustomPods": true,
+  "customPodOption": {
+    "name": "Other - Add new pod",
+    "description": "Create a new pod not listed above"
+  }
+}
