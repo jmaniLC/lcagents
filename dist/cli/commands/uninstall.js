@@ -40,9 +40,73 @@ exports.uninstallCommand = void 0;
 const commander_1 = require("commander");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
+/**
+ * Remove shell alias for lcagent command
+ */
+async function removeShellAlias() {
+    try {
+        const homeDir = os.homedir();
+        const shell = process.env['SHELL'] || '';
+        // Determine which shell config file to use
+        let configFile = '';
+        let shellName = '';
+        if (shell.includes('zsh')) {
+            configFile = path.join(homeDir, '.zshrc');
+            shellName = 'zsh';
+        }
+        else if (shell.includes('bash')) {
+            // Check for .bash_profile first, then .bashrc
+            const bashProfile = path.join(homeDir, '.bash_profile');
+            const bashrc = path.join(homeDir, '.bashrc');
+            if (await fs.pathExists(bashProfile)) {
+                configFile = bashProfile;
+            }
+            else {
+                configFile = bashrc;
+            }
+            shellName = 'bash';
+        }
+        else {
+            return {
+                success: false,
+                message: 'Unsupported shell detected - manually remove lcagent alias'
+            };
+        }
+        // Check if config file exists and has the alias
+        if (!await fs.pathExists(configFile)) {
+            return {
+                success: true,
+                message: 'No shell configuration file found'
+            };
+        }
+        const content = await fs.readFile(configFile, 'utf-8');
+        if (!content.includes('alias lcagent=')) {
+            return {
+                success: true,
+                message: 'No lcagent alias found in shell configuration'
+            };
+        }
+        // Remove the alias and comment
+        const lines = content.split('\n');
+        const filteredLines = lines.filter(line => !line.includes('alias lcagent=') &&
+            !line.includes('# LCAgents alias for easy access'));
+        await fs.writeFile(configFile, filteredLines.join('\n'));
+        return {
+            success: true,
+            message: `Alias removed from ${shellName} configuration`
+        };
+    }
+    catch (error) {
+        return {
+            success: false,
+            message: 'Failed to remove shell alias - manually remove lcagent alias'
+        };
+    }
+}
 exports.uninstallCommand = new commander_1.Command('uninstall')
     .description('Remove LCAgents from the current directory')
     .option('-f, --force', 'Force removal without confirmation')
@@ -119,6 +183,8 @@ curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js 
                 }
             }
         }
+        // Remove shell alias
+        const aliasResult = await removeShellAlias();
         spinner.succeed('LCAgents removed successfully!');
         console.log();
         if (options.keepConfig) {
@@ -128,8 +194,16 @@ curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js 
         else {
             console.log(chalk_1.default.green('✅ LCAgents completely removed'));
         }
+        // Show alias removal result
+        console.log(chalk_1.default.cyan('🔧 Shell Alias Cleanup:'));
+        if (aliasResult.success) {
+            console.log(chalk_1.default.white(`   ✅ ${aliasResult.message}`));
+        }
+        else {
+            console.log(chalk_1.default.yellow(`   ⚠️  ${aliasResult.message}`));
+        }
         console.log();
-        console.log(chalk_1.default.dim('To reinstall: npx @lendingclub/lcagents init'));
+        console.log(chalk_1.default.dim('To reinstall: npx git+https://github.com/jmaniLC/lcagents.git init'));
     }
     catch (error) {
         spinner.fail('Failed to remove LCAgents');

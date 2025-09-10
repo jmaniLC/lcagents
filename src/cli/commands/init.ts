@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as os from 'os';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
@@ -8,6 +9,74 @@ import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
 import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
 import { InstallationOptions, InstallationResult } from '../../types/CoreSystem';
+
+/**
+ * Setup shell alias for lcagent command
+ */
+async function setupShellAlias(): Promise<{ success: boolean; message: string; instructions?: string }> {
+  try {
+    const homeDir = os.homedir();
+    const shell = process.env['SHELL'] || '';
+    
+    // Determine which shell config file to use
+    let configFile = '';
+    let shellName = '';
+    
+    if (shell.includes('zsh')) {
+      configFile = path.join(homeDir, '.zshrc');
+      shellName = 'zsh';
+    } else if (shell.includes('bash')) {
+      // Check for .bash_profile first, then .bashrc
+      const bashProfile = path.join(homeDir, '.bash_profile');
+      const bashrc = path.join(homeDir, '.bashrc');
+      
+      if (await fs.pathExists(bashProfile)) {
+        configFile = bashProfile;
+      } else {
+        configFile = bashrc;
+      }
+      shellName = 'bash';
+    } else {
+      return {
+        success: false,
+        message: 'Unsupported shell detected',
+        instructions: 'Manually add: alias lcagent="npx git+https://github.com/jmaniLC/lcagents.git"'
+      };
+    }
+
+    const aliasCommand = 'alias lcagent="npx git+https://github.com/jmaniLC/lcagents.git"';
+    const aliasComment = '# LCAgents alias for easy access';
+    
+    // Check if alias already exists
+    if (await fs.pathExists(configFile)) {
+      const content = await fs.readFile(configFile, 'utf-8');
+      if (content.includes('alias lcagent=')) {
+        return {
+          success: true,
+          message: 'Alias already exists in shell configuration'
+        };
+      }
+    }
+    
+    // Add alias to shell config
+    const aliasEntry = `\n${aliasComment}\n${aliasCommand}\n`;
+    await fs.ensureFile(configFile);
+    await fs.appendFile(configFile, aliasEntry);
+    
+    return {
+      success: true,
+      message: `Alias added to ${shellName} configuration`,
+      instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to setup shell alias',
+      instructions: 'Manually add: alias lcagent="npx git+https://github.com/jmaniLC/lcagents.git"'
+    };
+  }
+}
 
 export const initCommand = new Command('init')
   .description('Initialize LCAgents in the current directory')
@@ -138,6 +207,26 @@ export const initCommand = new Command('init')
 
       console.log(chalk.green('🎉 LCAgents initialized successfully!'));
       console.log();
+      
+      // Setup shell alias
+      const aliasResult = await setupShellAlias();
+      if (aliasResult.success) {
+        console.log(chalk.green('🔧 Shell Alias Setup:'));
+        console.log(chalk.white(`   ✅ ${aliasResult.message}`));
+        if (aliasResult.instructions) {
+          console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
+        }
+        console.log(chalk.white('   Now you can use:'), chalk.cyan('lcagent <command>'));
+        console.log();
+      } else {
+        console.log(chalk.yellow('⚠️  Shell Alias Setup:'));
+        console.log(chalk.white(`   ⚠️  ${aliasResult.message}`));
+        if (aliasResult.instructions) {
+          console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
+        }
+        console.log();
+      }
+      
       console.log(chalk.cyan('📁 Layered Architecture Created:'));
       console.log(chalk.white(`  Core System: ${result.coreSystem} at ${path.relative(currentDir, result.installedPath)}`));
       result.layersCreated.forEach(layer => {
@@ -157,7 +246,7 @@ export const initCommand = new Command('init')
         });
         console.log();
       }
-      console.log(chalk.dim('For help: lcagents --help'));
+      console.log(chalk.dim('For help: lcagents --help or lcagent --help'));
       
     } catch (error) {
       console.log(chalk.red('❌ Failed to initialize LCAgents'));
