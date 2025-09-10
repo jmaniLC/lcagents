@@ -2,8 +2,6 @@ import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
@@ -66,23 +64,25 @@ async function setupShellAlias(): Promise<{ success: boolean; message: string; i
     await fs.ensureFile(configFile);
     await fs.appendFile(configFile, aliasEntry);
     
-    // Attempt to source the config file to make aliases immediately available
-    // Note: This will work in some environments but not others due to process isolation
+    // Create a helper script for immediate alias activation
     try {
-      const execAsync = promisify(exec);
+      const tempScript = path.join(os.tmpdir(), 'lcagents-activate.sh');
+      const activateScript = `#!/bin/bash
+# LCAgents alias activation script
+source ${configFile}
+echo "✅ LCAgents aliases activated in current session"
+# Clean up this temporary script
+rm -f "${tempScript}"
+`;
       
-      // Try to source the config file
-      await execAsync(`source ${configFile}`, { shell: '/bin/zsh' });
+      await fs.writeFile(tempScript, activateScript, { mode: 0o755 });
       
-      // The source command succeeded, but it only affects the child process
-      // The aliases won't be available in the current terminal session
       return {
         success: true,
         message: `Aliases added to ${shellName} configuration`,
-        instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
+        instructions: `To activate immediately: source ${tempScript} (or restart terminal)`
       };
-    } catch (sourceError) {
-      // Sourcing failed, but aliases were still added
+    } catch (error) {
       return {
         success: true,
         message: `Aliases added to ${shellName} configuration`,
@@ -235,7 +235,13 @@ export const initCommand = new Command('init')
         console.log(chalk.green('🔧 Shell Alias Setup:'));
         console.log(chalk.white(`   ✅ ${aliasResult.message}`));
         if (aliasResult.instructions) {
-          console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
+          // Check if it's the activation script instruction
+          if (aliasResult.instructions.includes('/tmp/lcagents-activate.sh')) {
+            console.log(chalk.yellow('   🚀 Quick Start:'));
+            console.log(chalk.cyan(`   ${aliasResult.instructions.split(': ')[1]}`));
+          } else {
+            console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
+          }
         }
         console.log(chalk.white('   Available commands:'), chalk.cyan('lcagent <command>'), chalk.dim('or'), chalk.cyan('lcagents <command>'));
         console.log();

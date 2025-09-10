@@ -41,8 +41,6 @@ const commander_1 = require("commander");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
-const child_process_1 = require("child_process");
-const util_1 = require("util");
 const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
@@ -99,22 +97,24 @@ async function setupShellAlias() {
         const aliasEntry = `\n${aliasComment}\n${aliasCommand1}\n${aliasCommand2}\n`;
         await fs.ensureFile(configFile);
         await fs.appendFile(configFile, aliasEntry);
-        // Attempt to source the config file to make aliases immediately available
-        // Note: This will work in some environments but not others due to process isolation
+        // Create a helper script for immediate alias activation
         try {
-            const execAsync = (0, util_1.promisify)(child_process_1.exec);
-            // Try to source the config file
-            await execAsync(`source ${configFile}`, { shell: '/bin/zsh' });
-            // The source command succeeded, but it only affects the child process
-            // The aliases won't be available in the current terminal session
+            const tempScript = path.join(os.tmpdir(), 'lcagents-activate.sh');
+            const activateScript = `#!/bin/bash
+# LCAgents alias activation script
+source ${configFile}
+echo "✅ LCAgents aliases activated in current session"
+# Clean up this temporary script
+rm -f "${tempScript}"
+`;
+            await fs.writeFile(tempScript, activateScript, { mode: 0o755 });
             return {
                 success: true,
                 message: `Aliases added to ${shellName} configuration`,
-                instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
+                instructions: `To activate immediately: source ${tempScript} (or restart terminal)`
             };
         }
-        catch (sourceError) {
-            // Sourcing failed, but aliases were still added
+        catch (error) {
             return {
                 success: true,
                 message: `Aliases added to ${shellName} configuration`,
@@ -241,7 +241,14 @@ exports.initCommand = new commander_1.Command('init')
             console.log(chalk_1.default.green('🔧 Shell Alias Setup:'));
             console.log(chalk_1.default.white(`   ✅ ${aliasResult.message}`));
             if (aliasResult.instructions) {
-                console.log(chalk_1.default.dim(`   💡 ${aliasResult.instructions}`));
+                // Check if it's the activation script instruction
+                if (aliasResult.instructions.includes('/tmp/lcagents-activate.sh')) {
+                    console.log(chalk_1.default.yellow('   🚀 Quick Start:'));
+                    console.log(chalk_1.default.cyan(`   ${aliasResult.instructions.split(': ')[1]}`));
+                }
+                else {
+                    console.log(chalk_1.default.dim(`   💡 ${aliasResult.instructions}`));
+                }
             }
             console.log(chalk_1.default.white('   Available commands:'), chalk_1.default.cyan('lcagent <command>'), chalk_1.default.dim('or'), chalk_1.default.cyan('lcagents <command>'));
             console.log();
