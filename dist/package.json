@@ -1,5 +1,5 @@
 {
-  "name": "@lendingclub/lcagents",
+  "name": "lcagents",
   "version": "2.2.0",
   "description": "LendingClub Internal AI Agent System",
   "main": "dist/index.js",
@@ -82,5 +82,8 @@
     "internal": true,
     "team": "engineering",
     "support": "#engineering-tools"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
