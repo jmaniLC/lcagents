@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const { exec } = require('child_process');
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -118,10 +119,32 @@ async function removeShellAlias() {
     
     await promisify(fs.writeFile)(configFile, filteredLines.join('\n'));
     
-    return {
-      success: true,
-      message: `Aliases removed from ${shellName} configuration`
-    };
+    // Create a temporary script to unalias in current session
+    const tempScript = path.join(require('os').tmpdir(), 'lcagents-unalias.sh');
+    const unaliasScript = `#!/bin/bash
+# Temporary script to remove LCAgents aliases from current session
+unalias lcagent 2>/dev/null || true
+unalias lcagents 2>/dev/null || true
+echo "✅ LCAgents aliases removed from current session"
+# Clean up this temporary script
+rm -f "${tempScript}"
+`;
+    
+    try {
+      await promisify(fs.writeFile)(tempScript, unaliasScript, { mode: 0o755 });
+      
+      return {
+        success: true,
+        message: `Aliases removed from ${shellName} configuration`,
+        instructions: `Run 'source ${tempScript}' to remove aliases from current session`
+      };
+    } catch (error) {
+      return {
+        success: true,
+        message: `Aliases removed from ${shellName} configuration`,
+        instructions: 'Run "unalias lcagent lcagents" or restart terminal to remove from current session'
+      };
+    }
     
   } catch (error) {
     return {
@@ -203,8 +226,12 @@ async function main() {
     console.log(colorize('cyan', '🔧 Shell Alias Cleanup:'));
     if (aliasResult.success) {
       console.log(colorize('gray', `   ✓ ${aliasResult.message}`));
+      if (aliasResult.instructions) {
+        console.log(colorize('gray', `   💡 ${aliasResult.instructions}`));
+      }
     } else {
       console.log(colorize('yellow', `   ⚠️  ${aliasResult.message}`));
+      console.log(colorize('gray', `   💡 Run 'unalias lcagent lcagents' to remove from current session`));
     }
     
     console.log();

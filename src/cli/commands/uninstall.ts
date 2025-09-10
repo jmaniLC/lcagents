@@ -9,7 +9,7 @@ import inquirer from 'inquirer';
 /**
  * Remove shell alias for lcagent command
  */
-async function removeShellAlias(): Promise<{ success: boolean; message: string }> {
+async function removeShellAlias(): Promise<{ success: boolean; message: string; instructions?: string; needsManualUnalias?: boolean; shellName?: string }> {
   try {
     const homeDir = os.homedir();
     const shell = process.env['SHELL'] || '';
@@ -35,7 +35,8 @@ async function removeShellAlias(): Promise<{ success: boolean; message: string }
     } else {
       return {
         success: false,
-        message: 'Unsupported shell detected - manually remove lcagent and lcagents aliases'
+        message: 'Unsupported shell detected - manually remove lcagent and lcagents aliases',
+        needsManualUnalias: false
       };
     }
     
@@ -43,7 +44,8 @@ async function removeShellAlias(): Promise<{ success: boolean; message: string }
     if (!await fs.pathExists(configFile)) {
       return {
         success: true,
-        message: 'No shell configuration file found'
+        message: 'No shell configuration file found',
+        needsManualUnalias: false
       };
     }
     
@@ -51,7 +53,8 @@ async function removeShellAlias(): Promise<{ success: boolean; message: string }
     if (!content.includes('alias lcagent=') && !content.includes('alias lcagents=')) {
       return {
         success: true,
-        message: 'No lcagent/lcagents aliases found in shell configuration'
+        message: 'No lcagent/lcagents aliases found in shell configuration',
+        needsManualUnalias: false
       };
     }
     
@@ -67,13 +70,16 @@ async function removeShellAlias(): Promise<{ success: boolean; message: string }
     
     return {
       success: true,
-      message: `Aliases removed from ${shellName} configuration`
+      message: `Aliases removed from ${shellName} configuration`,
+      needsManualUnalias: true,
+      shellName: shellName
     };
     
   } catch (error) {
     return {
         success: false,
-        message: 'Failed to remove shell aliases - manually remove lcagent and lcagents aliases'
+        message: 'Failed to remove shell aliases - manually remove lcagent and lcagents aliases',
+        needsManualUnalias: false
       };
   }
 }
@@ -182,12 +188,47 @@ curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js 
       console.log(chalk.cyan('🔧 Shell Alias Cleanup:'));
       if (aliasResult.success) {
         console.log(chalk.white(`   ✅ ${aliasResult.message}`));
+        
+        // Always create automated unalias script for successful removals
+        console.log(chalk.dim('   🔧 Creating automated unalias script...'));
+        try {
+          const tempScript = path.join(os.tmpdir(), 'lcagents-unalias.sh');
+          const unaliasScript = `#!/bin/bash
+# Temporary script to remove LCAgents aliases from current session
+unalias lcagent 2>/dev/null || true
+unalias lcagents 2>/dev/null || true
+echo "✅ LCAgents aliases removed from current session"
+# Clean up this temporary script
+rm -f "${tempScript}"
+`;
+          
+          await fs.writeFile(tempScript, unaliasScript, { mode: 0o755 });
+          console.log(chalk.dim(`   ✅ Script created at: ${tempScript}`));
+          
+          console.log(chalk.yellow('   🔧 To remove aliases from current session, run:'));
+          console.log(chalk.cyan(`   source ${tempScript}`));
+        } catch (error) {
+          console.log(chalk.red(`   ❌ Failed to create script: ${error}`));
+          console.log(chalk.dim(`   💡 Run "unalias lcagent lcagents" or restart terminal to remove from current session`));
+        }
+        
+        if (aliasResult.instructions) {
+          console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
+        }
       } else {
         console.log(chalk.yellow(`   ⚠️  ${aliasResult.message}`));
       }
       
       console.log();
       console.log(chalk.dim('To reinstall: npx git+https://github.com/jmaniLC/lcagents.git init'));
+      
+      // Always provide automated unalias solution
+      if (aliasResult.success) {
+        console.log();
+        console.log(chalk.cyan('🔧 Automated Alias Removal:'));
+        console.log(chalk.white('   Copy and paste this command to remove aliases from current session:'));
+        console.log(chalk.yellow('   unalias lcagent lcagents 2>/dev/null && echo "✅ Aliases removed from current session"'));
+      }
       
     } catch (error) {
       spinner.fail('Failed to remove LCAgents');
