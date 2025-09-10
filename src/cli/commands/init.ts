@@ -46,26 +46,27 @@ async function setupShellAlias(): Promise<{ success: boolean; message: string; i
       };
     }
 
-    const aliasCommand = 'alias lcagent="npx git+https://github.com/jmaniLC/lcagents.git"';
-    const aliasComment = '# LCAgents alias for easy access';
+    const aliasCommand1 = 'alias lcagent="npx git+https://github.com/jmaniLC/lcagents.git"';
+    const aliasCommand2 = 'alias lcagents="npx git+https://github.com/jmaniLC/lcagents.git"';
+    const aliasComment = '# LCAgents aliases for easy access';
     
     // Check if alias already exists
     if (await fs.pathExists(configFile)) {
       const content = await fs.readFile(configFile, 'utf-8');
-      if (content.includes('alias lcagent=')) {
+      if (content.includes('alias lcagent=') && content.includes('alias lcagents=')) {
         return {
           success: true,
-          message: 'Alias already exists in shell configuration'
+          message: 'Aliases already exist in shell configuration'
         };
       }
     }
     
-    // Add alias to shell config
-    const aliasEntry = `\n${aliasComment}\n${aliasCommand}\n`;
+    // Add aliases to shell config
+    const aliasEntry = `\n${aliasComment}\n${aliasCommand1}\n${aliasCommand2}\n`;
     await fs.ensureFile(configFile);
     await fs.appendFile(configFile, aliasEntry);
     
-    // Attempt to source the config file to make alias immediately available
+    // Attempt to source the config file to make aliases immediately available
     try {
       const execAsync = promisify(exec);
       
@@ -74,15 +75,15 @@ async function setupShellAlias(): Promise<{ success: boolean; message: string; i
       
       return {
         success: true,
-        message: `Alias added to ${shellName} configuration and activated`,
-        instructions: `'lcagent' command is now ready to use!`
+        message: `Aliases added to ${shellName} configuration and activated`,
+        instructions: `'lcagent' and 'lcagents' commands are now ready to use!`
       };
     } catch (sourceError) {
-      // Sourcing failed, but alias was still added
+      // Sourcing failed, but aliases were still added
       return {
         success: true,
-        message: `Alias added to ${shellName} configuration`,
-        instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' command`
+        message: `Aliases added to ${shellName} configuration`,
+        instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
       };
     }
     
@@ -233,7 +234,7 @@ export const initCommand = new Command('init')
         if (aliasResult.instructions) {
           console.log(chalk.dim(`   💡 ${aliasResult.instructions}`));
         }
-        console.log(chalk.white('   Now you can use:'), chalk.cyan('lcagent <command>'));
+        console.log(chalk.white('   Now you can use:'), chalk.cyan('lcagent <command>'), chalk.dim('or'), chalk.cyan('lcagents <command>'));
         console.log();
       } else {
         console.log(chalk.yellow('⚠️  Shell Alias Setup:'));

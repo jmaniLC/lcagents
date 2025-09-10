@@ -88,7 +88,7 @@ async function removeShellAlias() {
     } else {
       return {
         success: false,
-        message: 'Unsupported shell detected - manually remove lcagent alias'
+        message: 'Unsupported shell detected - manually remove lcagent and lcagents aliases'
       };
     }
     
@@ -101,31 +101,32 @@ async function removeShellAlias() {
     }
     
     const content = await promisify(fs.readFile)(configFile, 'utf-8');
-    if (!content.includes('alias lcagent=')) {
+    if (!content.includes('alias lcagent=') && !content.includes('alias lcagents=')) {
       return {
         success: true,
-        message: 'No lcagent alias found in shell configuration'
+        message: 'No lcagent/lcagents aliases found in shell configuration'
       };
     }
     
-    // Remove the alias and comment
+    // Remove the aliases and comment
     const lines = content.split('\n');
     const filteredLines = lines.filter(line => 
       !line.includes('alias lcagent=') && 
-      !line.includes('# LCAgents alias for easy access')
+      !line.includes('alias lcagents=') &&
+      !line.includes('# LCAgents alias') // Updated to match both old and new comments
     );
     
     await promisify(fs.writeFile)(configFile, filteredLines.join('\n'));
     
     return {
       success: true,
-      message: `Alias removed from ${shellName} configuration`
+      message: `Aliases removed from ${shellName} configuration`
     };
     
   } catch (error) {
     return {
       success: false,
-      message: 'Failed to remove shell alias - manually remove lcagent alias'
+      message: 'Failed to remove shell aliases - manually remove lcagent and lcagents aliases'
     };
   }
 }
