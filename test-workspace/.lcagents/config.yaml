@@ -1,12 +1,38 @@
 version: 1.0.0
 teamRoles:
-  test-role:
-    name: Test Role
-    description: A test role
+  project-manager:
+    name: Project Manager
+    description: Oversees project planning, coordination, and delivery
     responsibilities:
-      - Testing
+      - Project planning and scheduling
+      - Resource allocation and management
+      - Risk assessment and mitigation
+      - Stakeholder communication
+      - Progress tracking and reporting
     agents:
-      - test-agent
+      - pm
+  developer:
+    name: Developer
+    description: Handles software development and technical implementation
+    responsibilities:
+      - Code development and implementation
+      - Technical architecture design
+      - Code review and quality assurance
+      - Testing and debugging
+      - Documentation and maintenance
+    agents:
+      - dev
+  analyst:
+    name: Business Analyst
+    description: Analyzes requirements and provides business insights
+    responsibilities:
+      - Requirements gathering and analysis
+      - Business process modeling
+      - Data analysis and insights
+      - Solution design and validation
+      - Stakeholder requirement translation
+    agents:
+      - ba
 paths:
   agents: .lcagents/agents
   tasks: .lcagents/tasks
@@ -19,5 +45,6 @@ paths:
 github:
   integration: true
   copilotFeatures: true
-  repository: test/repo
+  repository: ""
+  branch: main
 customization: {}

@@ -1,0 +1,27 @@
+# Example Organization Agent Override
+# This file demonstrates how to override agent configurations at the organization level
+# Place this file in .lcagents/org/agents/overrides/{agent-name}.yaml
+
+agentOverrides:
+  pm:
+    # Override specific prompts or behaviors for PM agent
+    customPrompts:
+      - "Always ensure compliance with company coding standards"
+      - "Include security considerations in all planning"
+    
+    # Add organization-specific tools or integrations
+    additionalTools:
+      - "JIRA integration for ticket management"
+      - "Confluence for documentation standards"
+    
+    # Override template preferences
+    preferredTemplates:
+      - "company-prd-template.yaml"
+      - "security-review-template.yaml"
+
+# Company-wide configuration
+organizationConfig:
+  companyName: "LendingClub"
+  complianceLevel: "financial-services"
+  securityRequirements: "strict"
+  documentationStandards: "confluence-based"

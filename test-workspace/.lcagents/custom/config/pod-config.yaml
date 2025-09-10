@@ -1,0 +1,40 @@
+# Pod-specific Configuration
+# This file contains customizations specific to this pod/project
+
+podConfig:
+  podName: "example-pod"
+  projectType: "web-application"
+  teamSize: "small"  # small, medium, large
+  
+  # Preferred core system (for LCA-004)
+  preferredCoreSystem: "bmad-core"
+  fallbackCoreSystem: "bmad-core"
+
+  # Agent-specific core system preferences
+  agentCorePreferences:
+    pm: "bmad-core"
+    dev: "bmad-core"
+    qa: "bmad-core"
+
+# Pod-specific agent overrides
+agentCustomizations:
+  # Example: Customize the dev agent for this specific project
+  dev:
+    additionalContext:
+      - "This project uses React with TypeScript"
+      - "API follows RESTful conventions"
+      - "Testing framework is Jest"
+    
+    preferredTemplates:
+      - "react-component-template.tsx"
+      - "api-endpoint-template.ts"
+
+# Custom templates specific to this pod
+customTemplates:
+  enabled: true
+  templatePath: "./templates"
+
+# Task workflow customizations
+taskCustomizations:
+  # Override task behavior for this pod
+  enabled: false

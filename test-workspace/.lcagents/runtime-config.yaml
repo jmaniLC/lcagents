@@ -1,0 +1,16 @@
+coreSystem:
+  active: bmad-core
+  fallback: bmad-core
+paths:
+  qa: docs/qa
+  prd: docs/prd.md
+  architecture: docs/architecture
+features:
+  markdownExploder: true
+  shardedPrd: true
+  qaGate: true
+patterns:
+  epicFile: epic-{n}*.md
+  storyFile: story-{id}.md
+version: 1.0.0
+lastUpdated: 2025-09-10T00:21:36.435Z
