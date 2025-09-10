@@ -67,6 +67,10 @@ export const initCommand = new Command('init')
           if (system.isDefault) {
             console.log(chalk.green('   ✅ Recommended for most teams'));
           }
+          // Add development warnings for non-ready systems
+          if (system.name === 'enterprise-core' || system.name === 'minimal-core') {
+            console.log(chalk.red('   ⚠️  [DEV MODE] - Not ready for production use'));
+          }
           console.log();
         });
 
@@ -75,11 +79,20 @@ export const initCommand = new Command('init')
             type: 'list',
             name: 'coreSystemChoice',
             message: 'Select a core agent system:',
-            choices: availableSystems.map((system) => ({
-              name: `${system.name} - ${system.description}${system.isDefault ? ' (Recommended)' : ''}`,
-              value: system.name,
-              short: system.name
-            })),
+            choices: availableSystems.map((system) => {
+              let warningText = '';
+              if (system.name === 'enterprise-core') {
+                warningText = chalk.red(' [NOT READY]');
+              } else if (system.name === 'minimal-core') {
+                warningText = chalk.red(' [DEV MODE]');
+              }
+              
+              return {
+                name: `${system.name} - ${system.description}${system.isDefault ? ' (Recommended)' : ''}${warningText}`,
+                value: system.name,
+                short: system.name
+              };
+            }),
             default: availableSystems.find(s => s.isDefault)?.name || availableSystems[0]?.name
           }
         ]);

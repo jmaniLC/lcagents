@@ -30,7 +30,14 @@ coreCommand
         } else {
           availableSystems.forEach(system => {
             const isDefault = system.isDefault ? chalk.green(' (Default)') : '';
-            console.log(chalk.white(`  • ${chalk.bold(system.name)} v${system.version}${isDefault}`));
+            let warningText = '';
+            if (system.name === 'enterprise-core') {
+              warningText = chalk.red(' [NOT READY]');
+            } else if (system.name === 'minimal-core') {
+              warningText = chalk.red(' [DEV MODE]');
+            }
+            
+            console.log(chalk.white(`  • ${chalk.bold(system.name)} v${system.version}${isDefault}${warningText}`));
             console.log(chalk.dim(`    ${system.description}`));
             console.log(chalk.dim(`    ${system.agentCount} agents | ${system.installation.estimatedTime} | ${system.installation.diskSpace}`));
             console.log();

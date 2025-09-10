@@ -94,6 +94,10 @@ exports.initCommand = new commander_1.Command('init')
                 if (system.isDefault) {
                     console.log(chalk_1.default.green('   ✅ Recommended for most teams'));
                 }
+                // Add development warnings for non-ready systems
+                if (system.name === 'enterprise-core' || system.name === 'minimal-core') {
+                    console.log(chalk_1.default.red('   ⚠️  [DEV MODE] - Not ready for production use'));
+                }
                 console.log();
             });
             const { coreSystemChoice } = await inquirer_1.default.prompt([
@@ -101,11 +105,20 @@ exports.initCommand = new commander_1.Command('init')
                     type: 'list',
                     name: 'coreSystemChoice',
                     message: 'Select a core agent system:',
-                    choices: availableSystems.map((system) => ({
-                        name: `${system.name} - ${system.description}${system.isDefault ? ' (Recommended)' : ''}`,
-                        value: system.name,
-                        short: system.name
-                    })),
+                    choices: availableSystems.map((system) => {
+                        let warningText = '';
+                        if (system.name === 'enterprise-core') {
+                            warningText = chalk_1.default.red(' [NOT READY]');
+                        }
+                        else if (system.name === 'minimal-core') {
+                            warningText = chalk_1.default.red(' [DEV MODE]');
+                        }
+                        return {
+                            name: `${system.name} - ${system.description}${system.isDefault ? ' (Recommended)' : ''}${warningText}`,
+                            value: system.name,
+                            short: system.name
+                        };
+                    }),
                     default: availableSystems.find(s => s.isDefault)?.name || availableSystems[0]?.name
                 }
             ]);
