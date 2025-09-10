@@ -9,7 +9,7 @@ export class RuntimeConfigManager {
   private readonly configPath: string;
 
   constructor(basePath: string) {
-    this.configPath = path.join(basePath, '.lcagents', 'runtime-config.yaml');
+    this.configPath = path.join(basePath, '.lcagents', 'runtime', 'config.yaml');
   }
 
   /**

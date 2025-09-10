@@ -85,7 +85,7 @@ echo -e "${CYAN}⚙️ Testing configuration management...${NC}"
 echo
 
 echo -e "${BLUE}1. Current runtime configuration:${NC}"
-cat .lcagents/runtime-config.yaml
+cat .lcagents/runtime/config.yaml
 echo
 
 echo -e "${BLUE}2. Core system directories:${NC}"

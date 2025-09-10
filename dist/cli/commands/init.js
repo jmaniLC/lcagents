@@ -217,7 +217,7 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
             coreSystem: coreSystemName,
             installedPath: path.join(lcagentsDir, 'core', `.${coreSystemName}`),
             layersCreated: ['Core', 'Organization', 'Pod Custom', 'Runtime'],
-            configurationPath: path.join(lcagentsDir, 'runtime-config.yaml'),
+            configurationPath: path.join(lcagentsDir, 'runtime', 'config.yaml'),
             warnings: []
         };
     }

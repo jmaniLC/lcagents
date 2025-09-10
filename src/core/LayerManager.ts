@@ -653,7 +653,7 @@ The agent has deep knowledge of modern data engineering practices and can provid
           await this.runtimeConfigManager.updateConfig(runtimeUpdates);
         }
         
-        console.log(`🔧 Core system configuration values extracted to runtime-config.yaml`);
+        console.log(`🔧 Core system configuration values extracted to .lcagents/runtime/config.yaml`);
         
       } catch (error) {
         console.warn(`Failed to process core config from ${coreSystemName}:`, error);

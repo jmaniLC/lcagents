@@ -264,7 +264,7 @@ coreCommand
 
 // Show comprehensive core system status
 coreCommand
-  .command('status')
+  .command('details')
   .description('Show detailed core system status and configuration')
   .action(async () => {
     try {
@@ -305,7 +305,7 @@ coreCommand
         console.log(chalk.dim(`   QA Location: ${runtimeConfig.paths.qa}`));
         console.log(chalk.dim(`   PRD Location: ${runtimeConfig.paths.prd}`));
         console.log(chalk.dim(`   GitHub Integration: ${runtimeConfig.github.integration ? 'Enabled' : 'Disabled'}`));
-        console.log(chalk.dim(`   Config File: .lcagents/runtime-config.yaml`));
+        console.log(chalk.dim(`   Config File: .lcagents/runtime/config.yaml`));
         console.log(chalk.dim(`   Last Updated: ${new Date(runtimeConfig.lastUpdated).toLocaleString()}`));
       } catch (error) {
         console.log(chalk.red(`   ❌ Failed to load runtime config: ${error}`));

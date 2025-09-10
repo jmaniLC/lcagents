@@ -6,7 +6,7 @@
       "version": "4.45.0",
       "description": "Original BMAD-Core agent system with proven workflows",
       "agentCount": 11,
-      "installDate": "2025-09-10T00:51:27.586Z",
+      "installDate": "2025-09-10T01:11:34.309Z",
       "source": {
         "type": "bundled",
         "path": ".bmad-core"
@@ -19,10 +19,10 @@
     {
       "from": "",
       "to": "bmad-core",
-      "timestamp": "2025-09-10T00:51:27.590Z",
+      "timestamp": "2025-09-10T01:11:34.314Z",
       "success": true,
       "reason": "Initial installation"
     }
   ],
-  "lastUpdated": "2025-09-10T00:51:27.590Z"
+  "lastUpdated": "2025-09-10T01:11:34.314Z"
 }
