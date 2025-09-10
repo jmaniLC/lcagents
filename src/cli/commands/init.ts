@@ -6,7 +6,7 @@ import ora from 'ora';
 import inquirer from 'inquirer';
 import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
-import { ConfigManager } from '../../core/ConfigManager';
+import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
 import { InstallationOptions, InstallationResult } from '../../types/CoreSystem';
 
 export const initCommand = new Command('init')
@@ -35,7 +35,7 @@ export const initCommand = new Command('init')
       // Initialize managers
       const coreSystemManager = new CoreSystemManager(currentDir);
       const layerManager = new LayerManager(currentDir);
-      const configManager = new ConfigManager(currentDir);
+      const runtimeConfigManager = new RuntimeConfigManager(currentDir);
 
       let selectedCoreSystem = options.coreSystem;
 
@@ -109,7 +109,7 @@ export const initCommand = new Command('init')
         installationOptions,
         coreSystemManager,
         layerManager,
-        configManager
+        runtimeConfigManager
       );
 
       if (!result.success) {
@@ -155,7 +155,7 @@ async function performLayeredInstallation(
   options: InstallationOptions,
   coreSystemManager: CoreSystemManager,
   layerManager: LayerManager,
-  configManager: ConfigManager
+  runtimeConfigManager: RuntimeConfigManager
 ): Promise<InstallationResult> {
   const spinner = ora('Installing core agent system...').start();
   
@@ -198,10 +198,18 @@ async function performLayeredInstallation(
 
     // Step 7: Initialize configuration
     spinner.text = 'Initializing configuration...';
-    await configManager.initializeConfig({
-      enableGithub: !options.skipGithub,
-      enableCopilot: !options.skipGithub,
-      repository: '' // Would be detected from git
+    // Initialize runtime configuration with GitHub settings
+    await runtimeConfigManager.updateRuntimeConfig({
+      github: {
+        integration: !options.skipGithub,
+        copilotFeatures: !options.skipGithub,
+        repository: "",
+        branch: 'main'
+      },
+      coreSystem: {
+        active: coreSystemName,
+        fallback: coreSystemName
+      }
     });
 
     spinner.succeed('Installation completed successfully!');
@@ -211,7 +219,7 @@ async function performLayeredInstallation(
       coreSystem: coreSystemName,
       installedPath: path.join(lcagentsDir, 'core', `.${coreSystemName}`),
       layersCreated: ['Core', 'Organization', 'Pod Custom', 'Runtime'],
-      configurationPath: path.join(lcagentsDir, 'config.yaml'),
+      configurationPath: path.join(lcagentsDir, 'runtime-config.yaml'),
       warnings: []
     };
 

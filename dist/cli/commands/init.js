@@ -45,7 +45,7 @@ const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const CoreSystemManager_1 = require("../../core/CoreSystemManager");
 const LayerManager_1 = require("../../core/LayerManager");
-const ConfigManager_1 = require("../../core/ConfigManager");
+const RuntimeConfigManager_1 = require("../../core/RuntimeConfigManager");
 exports.initCommand = new commander_1.Command('init')
     .description('Initialize LCAgents in the current directory')
     .option('-f, --force', 'Overwrite existing installation')
@@ -68,7 +68,7 @@ exports.initCommand = new commander_1.Command('init')
         // Initialize managers
         const coreSystemManager = new CoreSystemManager_1.CoreSystemManager(currentDir);
         const layerManager = new LayerManager_1.LayerManager(currentDir);
-        const configManager = new ConfigManager_1.ConfigManager(currentDir);
+        const runtimeConfigManager = new RuntimeConfigManager_1.RuntimeConfigManager(currentDir);
         let selectedCoreSystem = options.coreSystem;
         // Interactive core system selection if not specified
         if (!selectedCoreSystem && options.interactive !== false) {
@@ -126,7 +126,7 @@ exports.initCommand = new commander_1.Command('init')
             skipGithub: !options.github,
             template: options.template
         };
-        const result = await performLayeredInstallation(currentDir, installationOptions, coreSystemManager, layerManager, configManager);
+        const result = await performLayeredInstallation(currentDir, installationOptions, coreSystemManager, layerManager, runtimeConfigManager);
         if (!result.success) {
             console.log(chalk_1.default.red('❌ Installation failed:'), result.error);
             process.exit(1);
@@ -163,7 +163,7 @@ exports.initCommand = new commander_1.Command('init')
 /**
  * Perform layered installation with the new architecture
  */
-async function performLayeredInstallation(basePath, options, coreSystemManager, layerManager, configManager) {
+async function performLayeredInstallation(basePath, options, coreSystemManager, layerManager, runtimeConfigManager) {
     const spinner = (0, ora_1.default)('Installing core agent system...').start();
     try {
         const lcagentsDir = path.join(basePath, '.lcagents');
@@ -198,10 +198,18 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
         }
         // Step 7: Initialize configuration
         spinner.text = 'Initializing configuration...';
-        await configManager.initializeConfig({
-            enableGithub: !options.skipGithub,
-            enableCopilot: !options.skipGithub,
-            repository: '' // Would be detected from git
+        // Initialize runtime configuration with GitHub settings
+        await runtimeConfigManager.updateRuntimeConfig({
+            github: {
+                integration: !options.skipGithub,
+                copilotFeatures: !options.skipGithub,
+                repository: "",
+                branch: 'main'
+            },
+            coreSystem: {
+                active: coreSystemName,
+                fallback: coreSystemName
+            }
         });
         spinner.succeed('Installation completed successfully!');
         return {
@@ -209,7 +217,7 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
             coreSystem: coreSystemName,
             installedPath: path.join(lcagentsDir, 'core', `.${coreSystemName}`),
             layersCreated: ['Core', 'Organization', 'Pod Custom', 'Runtime'],
-            configurationPath: path.join(lcagentsDir, 'config.yaml'),
+            configurationPath: path.join(lcagentsDir, 'runtime-config.yaml'),
             warnings: []
         };
     }

@@ -8,14 +8,17 @@ import {
   ResourceResolver
 } from '../types/CoreSystem';
 import { CoreSystemManager } from './CoreSystemManager';
+import { RuntimeConfigManager } from './RuntimeConfigManager';
 
 export class LayerManager implements ResourceResolver {
   private readonly lcagentsPath: string;
   private readonly coreSystemManager: CoreSystemManager;
+  private readonly runtimeConfigManager: RuntimeConfigManager;
 
   constructor(basePath: string) {
     this.lcagentsPath = path.join(basePath, '.lcagents');
     this.coreSystemManager = new CoreSystemManager(basePath);
+    this.runtimeConfigManager = new RuntimeConfigManager(basePath);
   }
 
   /**
@@ -600,16 +603,64 @@ The agent has deep knowledge of modern data engineering practices and can provid
     // Cache the resolution map for performance
     await fs.writeJson(path.join(runtimeDir, 'resource-map.json'), resolutionMap, { spaces: 2 });
     
-    // Create config directory and copy (not link) essential config files
-    const configDir = path.join(this.lcagentsPath, 'config');
-    await fs.ensureDir(configDir);
-    
-    // Copy core-config.yaml if it exists (this is configuration, not a resource)
-    const coreConfigSource = path.join(this.lcagentsPath, 'core', `.${coreSystemName}`, 'core-config.yaml');
-    const coreConfigTarget = path.join(configDir, 'core-config.yaml');
-    
-    if (await fs.pathExists(coreConfigSource)) {
-      await fs.copy(coreConfigSource, coreConfigTarget);
+    // Create simplified runtime configuration (instead of copying multiple config files)
+    await this.createRuntimeConfiguration(coreSystemName);
+  }
+
+  /**
+   * Create simplified runtime configuration for the active core system
+   */
+  private async createRuntimeConfiguration(coreSystemName: string): Promise<void> {
+    // Initialize with defaults
+    await this.runtimeConfigManager.updateConfig({
+      coreSystem: {
+        active: coreSystemName,
+        fallback: coreSystemName
+      }
+    });
+
+    // Load core system specific configuration if available
+    const coreConfigPath = path.join(this.lcagentsPath, 'core', `.${coreSystemName}`, 'core-config.yaml');
+    if (await fs.pathExists(coreConfigPath)) {
+      try {
+        const yaml = await import('yaml');
+        const coreConfig = yaml.parse(await fs.readFile(coreConfigPath, 'utf-8'));
+        
+        // Extract only runtime-relevant values
+        const runtimeUpdates: any = {};
+        
+        if (coreConfig.qa?.qaLocation) {
+          runtimeUpdates.paths = { qa: coreConfig.qa.qaLocation };
+        }
+        
+        if (coreConfig.prd?.prdFile) {
+          runtimeUpdates.paths = { 
+            ...runtimeUpdates.paths,
+            prd: coreConfig.prd.prdFile 
+          };
+        }
+        
+        if (coreConfig.markdownExploder !== undefined) {
+          runtimeUpdates.features = { markdownExploder: coreConfig.markdownExploder };
+        }
+        
+        if (coreConfig.prd?.epicFilePattern) {
+          runtimeUpdates.patterns = { epicFile: coreConfig.prd.epicFilePattern };
+        }
+        
+        // Update runtime config with extracted values
+        if (Object.keys(runtimeUpdates).length > 0) {
+          await this.runtimeConfigManager.updateConfig(runtimeUpdates);
+        }
+        
+        // Remove the core-config.yaml file since its values are now in runtime-config.yaml
+        // This eliminates configuration duplication
+        await fs.remove(coreConfigPath);
+        console.log(`🧹 Cleaned up redundant core-config.yaml (values extracted to runtime-config.yaml)`);
+        
+      } catch (error) {
+        console.warn(`Failed to process core config from ${coreSystemName}:`, error);
+      }
     }
   }
 

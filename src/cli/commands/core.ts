@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
+import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
 
 export const coreCommand = new Command('core')
   .description('Manage core agent systems');
@@ -257,6 +258,84 @@ coreCommand
     } catch (error) {
       spinner.fail(`Failed to validate ${name}`);
       console.error(chalk.red('Error:'), error);
+      process.exit(1);
+    }
+  });
+
+// Show comprehensive core system status
+coreCommand
+  .command('status')
+  .description('Show detailed core system status and configuration')
+  .action(async () => {
+    try {
+      const coreSystemManager = new CoreSystemManager(process.cwd());
+      const runtimeConfigManager = new RuntimeConfigManager(process.cwd());
+
+      console.log(chalk.cyan('🔧 Core System Status'));
+      console.log();
+
+      // Show active core system
+      const activeCoreSystem = await coreSystemManager.getActiveCoreSystem();
+      if (activeCoreSystem) {
+        console.log(chalk.white('📍 Active Core System:'));
+        console.log(chalk.green(`   ${chalk.bold(activeCoreSystem)}`));
+        
+        // Show installation details
+        const installedSystems = await coreSystemManager.getInstalledCoreSystems();
+        const activeSystem = installedSystems.find(s => s.name === activeCoreSystem);
+        
+        if (activeSystem) {
+          console.log(chalk.dim(`   Version: ${activeSystem.version}`));
+          console.log(chalk.dim(`   Installed: ${new Date(activeSystem.installDate).toLocaleDateString()}`));
+          console.log(chalk.dim(`   Agents: ${activeSystem.agentCount}`));
+          console.log(chalk.dim(`   Location: .lcagents/core/.${activeSystem.name}`));
+        }
+      } else {
+        console.log(chalk.red('❌ No active core system'));
+      }
+
+      console.log();
+
+      // Show runtime configuration
+      console.log(chalk.white('⚙️  Runtime Configuration:'));
+      try {
+        const runtimeConfig = await runtimeConfigManager.getRuntimeConfig();
+        console.log(chalk.green(`   Active: ${runtimeConfig.coreSystem.active}`));
+        console.log(chalk.dim(`   Fallback: ${runtimeConfig.coreSystem.fallback}`));
+        console.log(chalk.dim(`   QA Location: ${runtimeConfig.paths.qa}`));
+        console.log(chalk.dim(`   PRD Location: ${runtimeConfig.paths.prd}`));
+        console.log(chalk.dim(`   GitHub Integration: ${runtimeConfig.github.integration ? 'Enabled' : 'Disabled'}`));
+        console.log(chalk.dim(`   Config File: .lcagents/runtime-config.yaml`));
+        console.log(chalk.dim(`   Last Updated: ${new Date(runtimeConfig.lastUpdated).toLocaleString()}`));
+      } catch (error) {
+        console.log(chalk.red(`   ❌ Failed to load runtime config: ${error}`));
+      }
+
+      console.log();
+
+      // Show all installed systems
+      console.log(chalk.white('💾 All Installed Systems:'));
+      const installedSystems = await coreSystemManager.getInstalledCoreSystems();
+      
+      if (installedSystems.length === 0) {
+        console.log(chalk.dim('   No core systems installed'));
+      } else {
+        installedSystems.forEach(system => {
+          const isActive = system.name === activeCoreSystem ? chalk.green(' (Active)') : '';
+          console.log(chalk.white(`   • ${chalk.bold(system.name)} v${system.version}${isActive}`));
+          console.log(chalk.dim(`     ${system.description}`));
+          console.log(chalk.dim(`     ${system.agentCount} agents | Installed: ${new Date(system.installDate).toLocaleDateString()}`));
+        });
+      }
+
+      console.log();
+      console.log(chalk.cyan('💡 Commands:'));
+      console.log(chalk.white('   lcagents core list        - List all systems'));
+      console.log(chalk.white('   lcagents core switch <name> - Switch active system'));
+      console.log(chalk.white('   lcagents resource list agents - View available agents'));
+
+    } catch (error) {
+      console.error(chalk.red('❌ Failed to get core system status:'), error);
       process.exit(1);
     }
   });
