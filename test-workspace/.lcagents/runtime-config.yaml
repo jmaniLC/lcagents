@@ -12,5 +12,10 @@ features:
 patterns:
   epicFile: epic-{n}*.md
   storyFile: story-{id}.md
+github:
+  integration: true
+  copilotFeatures: true
+  repository: ""
+  branch: main
 version: 1.0.0
-lastUpdated: 2025-09-10T00:21:36.435Z
+lastUpdated: 2025-09-10T00:40:16.773Z
