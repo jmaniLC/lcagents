@@ -47,6 +47,10 @@ exports.uninstallCommand = new commander_1.Command('uninstall')
     .description('Remove LCAgents from the current directory')
     .option('-f, --force', 'Force removal without confirmation')
     .option('--keep-config', 'Keep configuration files')
+    .addHelpText('after', `
+Note: To avoid npx install prompts, use the standalone uninstaller:
+curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js | node -- --force
+  `)
     .action(async (options) => {
     const currentDir = process.cwd();
     const lcagentsDir = path.join(currentDir, '.lcagents');

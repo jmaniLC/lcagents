@@ -1,6 +1,6 @@
 {
   "name": "@lendingclub/lcagents",
-  "version": "1.0.0-alpha.4",
+  "version": "2.2.0",
   "description": "LendingClub Internal Agent System - Distributed BMAD-Core Agents for GitHub Copilot",
   "main": "dist/index.js",
   "bin": {

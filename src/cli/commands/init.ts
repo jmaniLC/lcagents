@@ -17,6 +17,12 @@ export const initCommand = new Command('init')
   .option('--no-interactive', 'Skip interactive prompts')
   .option('--core-system <name>', 'Specify core system to install (default: bmad-core)')
   .action(async (options) => {
+    // Show version info during install
+    const packageJson = require('../../../package.json');
+    console.log(chalk.cyan('🔧 LCAgents Installer'));
+    console.log(chalk.gray(`github:jmaniLC/lcagents ver${packageJson.version}`));
+    console.log();
+    
     const spinner = ora('Initializing LCAgents...').start();
     
     try {
