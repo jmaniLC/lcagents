@@ -47,6 +47,101 @@ const inquirer_1 = __importDefault(require("inquirer"));
 const CoreSystemManager_1 = require("../../core/CoreSystemManager");
 const LayerManager_1 = require("../../core/LayerManager");
 const RuntimeConfigManager_1 = require("../../core/RuntimeConfigManager");
+const techStacker_1 = require("../../utils/techStacker");
+/**
+ * Ask user for installation directory and analyze tech stack
+ */
+async function selectInstallationDirectory() {
+    console.log(chalk_1.default.blue('\n🎯 LCAgents Installation Setup'));
+    console.log(chalk_1.default.gray('First, let\'s determine where to install LCAgents and analyze your project\'s tech stack.\n'));
+    const { installChoice } = await inquirer_1.default.prompt([
+        {
+            type: 'list',
+            name: 'installChoice',
+            message: 'Where would you like to install LCAgents?',
+            choices: [
+                { name: '📁 Current directory', value: 'current' },
+                { name: '📂 Select a different directory', value: 'custom' },
+                { name: '🏠 Home directory', value: 'home' }
+            ]
+        }
+    ]);
+    let installPath;
+    switch (installChoice) {
+        case 'current':
+            installPath = process.cwd();
+            break;
+        case 'home':
+            installPath = os.homedir();
+            break;
+        case 'custom':
+            const { customPath } = await inquirer_1.default.prompt([
+                {
+                    type: 'input',
+                    name: 'customPath',
+                    message: 'Enter the full path to the directory:',
+                    validate: (input) => {
+                        if (!input.trim())
+                            return 'Path cannot be empty';
+                        return true;
+                    }
+                }
+            ]);
+            installPath = path.resolve(customPath.trim());
+            break;
+        default:
+            installPath = process.cwd();
+    }
+    console.log(chalk_1.default.gray(`\n📍 Selected installation path: ${installPath}`));
+    // Analyze tech stack
+    const spinner = (0, ora_1.default)('🔍 Analyzing project structure and technology stack...').start();
+    try {
+        const techStackData = await (0, techStacker_1.analyzeTechStack)(installPath);
+        if (techStackData.isEmpty) {
+            spinner.fail(chalk_1.default.red('Directory is empty'));
+            console.log(chalk_1.default.yellow(`\n⚠️  ${techStackData.message}`));
+            console.log(chalk_1.default.gray('Please select a directory with source code files to proceed with installation.\n'));
+            process.exit(1);
+        }
+        if (techStackData.noTechStack) {
+            spinner.fail(chalk_1.default.red('No technology stack detected'));
+            console.log(chalk_1.default.yellow(`\n⚠️  ${techStackData.message}`));
+            const { proceedAnyway } = await inquirer_1.default.prompt([
+                {
+                    type: 'confirm',
+                    name: 'proceedAnyway',
+                    message: 'Would you like to proceed with installation anyway?',
+                    default: false
+                }
+            ]);
+            if (!proceedAnyway) {
+                console.log(chalk_1.default.gray('Installation cancelled.\n'));
+                process.exit(1);
+            }
+        }
+        else {
+            spinner.succeed(chalk_1.default.green('Tech stack analysis completed'));
+            console.log(chalk_1.default.blue('\n📊 Detected Technology Stack:'));
+            console.log(chalk_1.default.green(`   Primary: ${techStackData.primaryStack}`));
+            if (techStackData.allStacks.length > 1) {
+                console.log(chalk_1.default.cyan(`   Additional: ${techStackData.allStacks.slice(1).join(', ')}`));
+            }
+            if (techStackData.frameworks.length > 0) {
+                console.log(chalk_1.default.magenta(`   Frameworks: ${techStackData.frameworks.join(', ')}`));
+            }
+            if (techStackData.buildTools.length > 0) {
+                console.log(chalk_1.default.yellow(`   Build Tools: ${techStackData.buildTools.join(', ')}`));
+            }
+            console.log(chalk_1.default.green('\n✅ This directory is suitable for LCAgents installation!'));
+        }
+        return { installPath, techStackData };
+    }
+    catch (error) {
+        spinner.fail(chalk_1.default.red('Failed to analyze directory'));
+        console.error(chalk_1.default.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+        process.exit(1);
+    }
+}
 /**
  * Setup shell alias for lcagent command
  */
@@ -153,19 +248,21 @@ exports.initCommand = new commander_1.Command('init')
     console.log();
     const spinner = (0, ora_1.default)('Initializing LCAgents...').start();
     try {
-        const currentDir = process.cwd();
-        const lcagentsDir = path.join(currentDir, '.lcagents');
+        // Step 1: Select installation directory and analyze tech stack
+        spinner.stop();
+        const { installPath, techStackData } = await selectInstallationDirectory();
+        const lcagentsDir = path.join(installPath, '.lcagents');
         // Check if already initialized
         if (await fs.pathExists(lcagentsDir) && !options.force) {
-            spinner.fail('LCAgents already initialized in this directory');
+            console.log(chalk_1.default.red('❌ LCAgents already initialized in this directory'));
             console.log(chalk_1.default.yellow('Use --force to overwrite existing installation'));
             return;
         }
-        spinner.stop();
+        spinner.start('Setting up LCAgents...');
         // Initialize managers
-        const coreSystemManager = new CoreSystemManager_1.CoreSystemManager(currentDir);
-        const layerManager = new LayerManager_1.LayerManager(currentDir);
-        const runtimeConfigManager = new RuntimeConfigManager_1.RuntimeConfigManager(currentDir);
+        const coreSystemManager = new CoreSystemManager_1.CoreSystemManager(installPath);
+        const layerManager = new LayerManager_1.LayerManager(installPath);
+        const runtimeConfigManager = new RuntimeConfigManager_1.RuntimeConfigManager(installPath);
         let selectedCoreSystem = options.coreSystem;
         // Interactive core system selection if not specified
         if (!selectedCoreSystem && options.interactive !== false) {
@@ -236,13 +333,45 @@ exports.initCommand = new commander_1.Command('init')
             skipGithub: !options.github,
             template: options.template
         };
-        const result = await performLayeredInstallation(currentDir, installationOptions, coreSystemManager, layerManager, runtimeConfigManager);
+        const result = await performLayeredInstallation(installPath, installationOptions, coreSystemManager, layerManager, runtimeConfigManager);
         if (!result.success) {
             console.log(chalk_1.default.red('❌ Installation failed:'), result.error);
             process.exit(1);
         }
+        // Update runtime config with tech stack information
+        if (techStackData && !techStackData.isEmpty && !techStackData.noTechStack) {
+            await runtimeConfigManager.updateRuntimeConfig({
+                techStack: {
+                    primary: techStackData.primaryStack,
+                    all: techStackData.allStacks,
+                    frameworks: techStackData.frameworks,
+                    buildTools: techStackData.buildTools,
+                    packageManagers: techStackData.packageManagers,
+                    databases: techStackData.databases,
+                    deployment: techStackData.deployment,
+                    analyzedAt: new Date().toISOString()
+                }
+            });
+            // Generate and save tech stack report
+            const techReport = (0, techStacker_1.generateTechStackReport)(techStackData);
+            if (techReport) {
+                const techPreferencesPath = path.join(installPath, '.lcagents', 'core', '.bmad-core', 'data', 'technical-preferences.md');
+                await fs.ensureDir(path.dirname(techPreferencesPath));
+                await fs.writeFile(techPreferencesPath, techReport, 'utf-8');
+            }
+        }
         console.log(chalk_1.default.green('🎉 LCAgents initialized successfully!'));
         console.log();
+        // Display tech stack information
+        if (techStackData && !techStackData.isEmpty && !techStackData.noTechStack) {
+            console.log(chalk_1.default.blue('📊 Technology Stack Information:'));
+            console.log(chalk_1.default.white(`   Primary Stack: ${techStackData.primaryStack}`));
+            if (techStackData.frameworks.length > 0) {
+                console.log(chalk_1.default.cyan(`   Frameworks: ${techStackData.frameworks.join(', ')}`));
+            }
+            console.log(chalk_1.default.green('   ✅ Tech stack preferences saved to technical-preferences.md'));
+            console.log();
+        }
         // Setup shell alias
         const aliasResult = await setupShellAlias();
         if (aliasResult.success) {
@@ -270,7 +399,7 @@ exports.initCommand = new commander_1.Command('init')
             console.log();
         }
         console.log(chalk_1.default.cyan('📁 Layered Architecture Created:'));
-        console.log(chalk_1.default.white(`  Core System: ${result.coreSystem} at ${path.relative(currentDir, result.installedPath)}`));
+        console.log(chalk_1.default.white(`  Core System: ${result.coreSystem} at ${path.relative(installPath, result.installedPath)}`));
         result.layersCreated.forEach(layer => {
             console.log(chalk_1.default.dim(`  ${layer} layer ready for customization`));
         });

@@ -171,6 +171,18 @@ export interface RuntimeConfig {
     branch: string;             // Default branch
   };
 
+  // Technology stack information
+  techStack?: {
+    primary: string;            // Primary technology stack
+    all: string[];              // All detected stacks
+    frameworks: string[];       // Detected frameworks
+    buildTools: string[];       // Build tools
+    packageManagers: string[];  // Package managers
+    databases: string[];        // Database technologies
+    deployment: string[];       // Deployment technologies
+    analyzedAt: string;         // When analysis was performed
+  };
+
   // Metadata
   version: string;
   lastUpdated: string;
