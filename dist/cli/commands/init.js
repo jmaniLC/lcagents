@@ -41,6 +41,7 @@ const commander_1 = require("commander");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
+const child_process_1 = require("child_process");
 const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
@@ -97,7 +98,7 @@ async function setupShellAlias() {
         const aliasEntry = `\n${aliasComment}\n${aliasCommand1}\n${aliasCommand2}\n`;
         await fs.ensureFile(configFile);
         await fs.appendFile(configFile, aliasEntry);
-        // Create a helper script for immediate alias activation
+        // Create and execute activation script for immediate alias availability
         try {
             const tempScript = path.join(os.tmpdir(), 'lcagents-activate.sh');
             const activateScript = `#!/bin/bash
@@ -108,18 +109,56 @@ echo "✅ LCAgents aliases activated in current session"
 rm -f "${tempScript}"
 `;
             await fs.writeFile(tempScript, activateScript, { mode: 0o755 });
+            // Auto-execute the activation script using spawn with stdio: 'inherit'
+            await new Promise((resolve, reject) => {
+                const childProcess = (0, child_process_1.spawn)('bash', [tempScript], {
+                    stdio: 'inherit',
+                    env: process.env,
+                    cwd: process.cwd()
+                });
+                childProcess.on('close', (code) => {
+                    if (code === 0) {
+                        resolve();
+                    }
+                    else {
+                        reject(new Error(`Activation script failed with code ${code}`));
+                    }
+                });
+                childProcess.on('error', (err) => {
+                    reject(err);
+                });
+            });
             return {
                 success: true,
-                message: `Aliases added to ${shellName} configuration`,
-                instructions: `To activate immediately: source ${tempScript} (or restart terminal)`
+                message: `Aliases added and activated in ${shellName} configuration`,
+                instructions: `Aliases automatically activated! Commands 'lcagent' and 'lcagents' are now available.`
             };
         }
         catch (error) {
-            return {
-                success: true,
-                message: `Aliases added to ${shellName} configuration`,
-                instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
-            };
+            // Fallback to manual activation if auto-execution fails
+            const tempScript = path.join(os.tmpdir(), 'lcagents-activate.sh');
+            const activateScript = `#!/bin/bash
+# LCAgents alias activation script
+source ${configFile}
+echo "✅ LCAgents aliases activated in current session"
+# Clean up this temporary script
+rm -f "${tempScript}"
+`;
+            try {
+                await fs.writeFile(tempScript, activateScript, { mode: 0o755 });
+                return {
+                    success: true,
+                    message: `Aliases added to ${shellName} configuration`,
+                    instructions: `To activate immediately: source ${tempScript} (or restart terminal)`
+                };
+            }
+            catch {
+                return {
+                    success: true,
+                    message: `Aliases added to ${shellName} configuration`,
+                    instructions: `Run 'source ${path.basename(configFile)}' or restart your terminal to use 'lcagent' and 'lcagents' commands`
+                };
+            }
         }
     }
     catch (error) {
