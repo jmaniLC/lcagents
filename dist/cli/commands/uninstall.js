@@ -44,6 +44,7 @@ const os = __importStar(require("os"));
 const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const inquirer_1 = __importDefault(require("inquirer"));
+const GitHubCopilotManager_1 = require("../../core/GitHubCopilotManager");
 /**
  * Remove shell alias for lcagent command
  */
@@ -186,6 +187,9 @@ curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js 
                 }
             }
         }
+        // Remove GitHub Copilot instructions created by LCAgents
+        const copilotManager = new GitHubCopilotManager_1.GitHubCopilotManager(currentDir);
+        await copilotManager.removeCopilotInstructions();
         // Remove shell alias
         const aliasResult = await removeShellAlias();
         spinner.succeed('LCAgents removed successfully!');

@@ -37,6 +37,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initCommand = void 0;
+exports.selectInstallationDirectory = selectInstallationDirectory;
+exports.validateInstallationDirectory = validateInstallationDirectory;
+exports.getPodInformation = getPodInformation;
+exports.analyzeTechStackWithContext = analyzeTechStackWithContext;
+exports.updateGitHubCopilotInstructions = updateGitHubCopilotInstructions;
 const commander_1 = require("commander");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
@@ -47,6 +52,7 @@ const inquirer_1 = __importDefault(require("inquirer"));
 const CoreSystemManager_1 = require("../../core/CoreSystemManager");
 const LayerManager_1 = require("../../core/LayerManager");
 const RuntimeConfigManager_1 = require("../../core/RuntimeConfigManager");
+const GitHubCopilotManager_1 = require("../../core/GitHubCopilotManager");
 const techStacker_1 = require("../../utils/techStacker");
 /**
  * Ask user for installation directory
@@ -198,6 +204,33 @@ async function analyzeTechStackWithContext(installPath, podInfo) {
         spinner.fail(chalk_1.default.red('Failed to analyze tech stack'));
         console.error(chalk_1.default.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
+    }
+}
+/**
+ * Update GitHub Copilot instructions with LCAgents information
+ */
+async function updateGitHubCopilotInstructions(installPath, podInfo, techStackData) {
+    const spinner = (0, ora_1.default)('📝 Updating GitHub Copilot instructions...').start();
+    try {
+        const copilotManager = new GitHubCopilotManager_1.GitHubCopilotManager(installPath);
+        await copilotManager.updateCopilotInstructions({
+            projectPath: installPath,
+            podInfo,
+            techStack: techStackData.allStacks || [techStackData.stack].filter(Boolean)
+        });
+        spinner.succeed(chalk_1.default.green('GitHub Copilot instructions updated'));
+        console.log(chalk_1.default.blue('\n📋 GitHub Copilot Integration:'));
+        console.log(chalk_1.default.white('   ✅ LCAgents information added to .github/copilot-instructions.md'));
+        console.log(chalk_1.default.cyan('   🤖 GitHub Copilot now has context about available agents'));
+        console.log(chalk_1.default.dim('   💡 Use @lcagents activate <agent> to start working with specialized agents'));
+        console.log();
+    }
+    catch (error) {
+        spinner.fail(chalk_1.default.red('Failed to update GitHub Copilot instructions'));
+        console.error(chalk_1.default.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+        // Don't exit - this is not critical for installation
+        console.log(chalk_1.default.yellow('⚠️  Installation will continue without GitHub Copilot integration'));
+        console.log();
     }
 }
 /**
@@ -428,6 +461,8 @@ exports.initCommand = new commander_1.Command('init')
                 await fs.writeFile(techPreferencesPath, techReport, 'utf-8');
             }
         }
+        // Step 7: Update GitHub Copilot instructions
+        await updateGitHubCopilotInstructions(installPath, podInfo, techStackData);
         console.log(chalk_1.default.green('🎉 LCAgents initialized successfully!'));
         console.log();
         // Display tech stack information

@@ -8,13 +8,14 @@ import inquirer from 'inquirer';
 import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
 import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
+import { GitHubCopilotManager } from '../../core/GitHubCopilotManager';
 import { InstallationOptions, InstallationResult } from '../../types/CoreSystem';
 import { analyzeTechStack, generateTechStackReport, TechStackData, selectPod } from '../../utils/techStacker';
 
 /**
  * Ask user for installation directory
  */
-async function selectInstallationDirectory(): Promise<string> {
+export async function selectInstallationDirectory(): Promise<string> {
   console.log(chalk.blue('\n🎯 LCAgents Installation Setup'));
   console.log(chalk.gray('First, let\'s determine where to install LCAgents.\n'));
 
@@ -65,7 +66,7 @@ async function selectInstallationDirectory(): Promise<string> {
 /**
  * Validate directory for LCAgents installation
  */
-async function validateInstallationDirectory(installPath: string): Promise<void> {
+export async function validateInstallationDirectory(installPath: string): Promise<void> {
   const spinner = ora('🔍 Validating directory structure...').start();
   
   try {
@@ -121,7 +122,7 @@ async function validateInstallationDirectory(installPath: string): Promise<void>
 /**
  * Get pod information from user
  */
-async function getPodInformation(): Promise<{ name: string; id: string; owner: string }> {
+export async function getPodInformation(): Promise<{ name: string; id: string; owner: string }> {
   console.log(chalk.blue('🏢 Pod Assignment'));
   console.log(chalk.gray('Assign this repository to an organizational pod for better management.\n'));
   
@@ -131,7 +132,7 @@ async function getPodInformation(): Promise<{ name: string; id: string; owner: s
 /**
  * Analyze tech stack and get repository information
  */
-async function analyzeTechStackWithContext(installPath: string, podInfo: { name: string; id: string; owner: string }): Promise<TechStackData> {
+export async function analyzeTechStackWithContext(installPath: string, podInfo: { name: string; id: string; owner: string }): Promise<TechStackData> {
   const spinner = ora('🔍 Analyzing project technology stack...').start();
   
   try {
@@ -182,6 +183,41 @@ async function analyzeTechStackWithContext(installPath: string, podInfo: { name:
     spinner.fail(chalk.red('Failed to analyze tech stack'));
     console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
+  }
+}
+
+/**
+ * Update GitHub Copilot instructions with LCAgents information
+ */
+export async function updateGitHubCopilotInstructions(
+  installPath: string, 
+  podInfo: { name: string; id: string; owner: string }, 
+  techStackData: TechStackData
+): Promise<void> {
+  const spinner = ora('📝 Updating GitHub Copilot instructions...').start();
+  
+  try {
+    const copilotManager = new GitHubCopilotManager(installPath);
+    
+    await copilotManager.updateCopilotInstructions({
+      projectPath: installPath,
+      podInfo,
+      techStack: techStackData.allStacks || [techStackData.stack].filter(Boolean)
+    });
+    
+    spinner.succeed(chalk.green('GitHub Copilot instructions updated'));
+    console.log(chalk.blue('\n📋 GitHub Copilot Integration:'));
+    console.log(chalk.white('   ✅ LCAgents information added to .github/copilot-instructions.md'));
+    console.log(chalk.cyan('   🤖 GitHub Copilot now has context about available agents'));
+    console.log(chalk.dim('   💡 Use @lcagents activate <agent> to start working with specialized agents'));
+    console.log();
+    
+  } catch (error) {
+    spinner.fail(chalk.red('Failed to update GitHub Copilot instructions'));
+    console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+    // Don't exit - this is not critical for installation
+    console.log(chalk.yellow('⚠️  Installation will continue without GitHub Copilot integration'));
+    console.log();
   }
 }
 
@@ -450,6 +486,9 @@ export const initCommand = new Command('init')
           await fs.writeFile(techPreferencesPath, techReport, 'utf-8');
         }
       }
+
+      // Step 7: Update GitHub Copilot instructions
+      await updateGitHubCopilotInstructions(installPath, podInfo, techStackData);
 
       console.log(chalk.green('🎉 LCAgents initialized successfully!'));
       console.log();

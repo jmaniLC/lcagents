@@ -5,6 +5,7 @@ import * as os from 'os';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
+import { GitHubCopilotManager } from '../../core/GitHubCopilotManager';
 
 /**
  * Remove shell alias for lcagent command
@@ -165,6 +166,10 @@ curl -fsSL https://raw.githubusercontent.com/jmaniLC/lcagents/main/uninstall.js 
           }
         }
       }
+      
+      // Remove GitHub Copilot instructions created by LCAgents
+      const copilotManager = new GitHubCopilotManager(currentDir);
+      await copilotManager.removeCopilotInstructions();
       
       // Remove shell alias
       const aliasResult = await removeShellAlias();
