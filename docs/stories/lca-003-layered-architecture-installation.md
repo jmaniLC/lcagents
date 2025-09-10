@@ -44,7 +44,7 @@ Currently, the LCAgents installation copies all BMAD-Core content directly to a 
 - [ ] Backward compatibility maintained through resolution links to merged resources
 - [ ] Runtime cache directory created at `.lcagents/runtime/cache/`
 - [ ] Runtime logs directory created at `.lcagents/runtime/logs/`
-
+s
 ### AC4: Customization Layer Scaffolding
 - [ ] `.lcagents/custom/config/pod-config.yaml` created with default configuration
 - [ ] `.lcagents/custom/agents/overrides/` directory created for agent customizations
