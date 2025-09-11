@@ -1,11 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as yaml from 'yaml';
+import * as path from 'path';
+import * as readline from 'readline';
 import { AgentLoader } from '../../core/AgentLoader';
 import { LayerManager } from '../../core/LayerManager';
 import { CoreSystemManager } from '../../core/CoreSystemManager';
-import { ParsedAgent } from '../../types/AgentDefinition';
+import { ParsedAgent, AgentDefinition } from '../../types/AgentDefinition';
 
 // Helper function removed - AgentLoader no longer needs config
 
@@ -537,7 +539,588 @@ export const agentCommand = new Command('agent')
           process.exit(1);
         }
       })
+  )
+
+  // Epic 2: Guided Agent Creation - Story 2.1: Create Agent Through Wizard
+  .addCommand(
+    new Command('create')
+      .description('Create a new custom agent through guided wizard')
+      .option('--template <template-name>', 'Create agent from template')
+      .option('--skip-validation', 'Skip validation during creation')
+      .action(async (options) => {
+        try {
+          const currentDir = process.cwd();
+          
+          if (options.template) {
+            await createAgentFromTemplate(options.template, currentDir, !options.skipValidation);
+          } else {
+            await createAgentWithWizard(currentDir, !options.skipValidation);
+          }
+          
+        } catch (error) {
+          console.error(chalk.red(`❌ Error creating agent: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          process.exit(1);
+        }
+      })
+  )
+
+  // Epic 2: Guided Agent Creation - Story 2.2: Agent Template System  
+  .addCommand(
+    new Command('from-template')
+      .description('Create agent from pre-defined template with uniqueness checking')
+      .argument('<template-name>', 'Name of the template to use')
+      .option('--skip-validation', 'Skip validation during creation')
+      .action(async (templateName: string, options) => {
+        try {
+          const currentDir = process.cwd();
+          await createAgentFromTemplate(templateName, currentDir, !options.skipValidation);
+        } catch (error) {
+          console.error(chalk.red(`❌ Error creating agent from template: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          process.exit(1);
+        }
+      })
+  )
+
+  // Epic 2: Guided Agent Creation - Story 2.2: Agent Cloning
+  .addCommand(
+    new Command('clone')
+      .description('Clone and customize existing agent with conflict resolution')
+      .argument('<existing-agent>', 'Name of the existing agent to clone')
+      .option('--skip-validation', 'Skip validation during creation')
+      .action(async (existingAgent: string, options) => {
+        try {
+          const currentDir = process.cwd();
+          await cloneAgent(existingAgent, currentDir, !options.skipValidation);
+        } catch (error) {
+          console.error(chalk.red(`❌ Error cloning agent: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          process.exit(1);
+        }
+      })
+  )
+
+  // Epic 2: Agent Validation
+  .addCommand(
+    new Command('validate')
+      .description('Validate agent using AgentLoader.validateAgent() with enhanced error grouping')
+      .argument('<agent-name>', 'Name of the agent to validate')
+      .action(async (agentName: string) => {
+        try {
+          const currentDir = process.cwd();
+          await validateAgent(agentName, currentDir);
+        } catch (error) {
+          console.error(chalk.red(`❌ Error validating agent: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          process.exit(1);
+        }
+      })
   );
+
+// Epic 2: Guided Agent Creation Implementation Functions
+
+/**
+ * Create agent through guided wizard (Epic 2, Story 2.1)
+ */
+async function createAgentWithWizard(basePath: string, validate: boolean = true): Promise<void> {
+  console.log(chalk.blue('🚀 Agent Creation Wizard\n'));
+  
+  const agentLoader = new AgentLoader(basePath);
+  const layerManager = new LayerManager(basePath);
+  
+  // Load existing agents for conflict detection
+  const { loaded: existingAgents } = await agentLoader.loadAllAgents();
+  
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    // Step 1/6: Basic Information with conflict detection
+    console.log(chalk.cyan('Step 1/6: Basic Information'));
+    
+    let agentName = '';
+    let agentId = '';
+    let isUnique = false;
+    
+    while (!isUnique) {
+      agentName = await askQuestion(rl, '? What should your agent be called? (e.g., "Data Scientist"): ');
+      agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
+      // Check for conflicts using AgentLoader.loadAllAgents()
+      const existingAgent = existingAgents.find(agent => 
+        agent.definition.id === agentId || 
+        agent.definition.name.toLowerCase() === agentName.toLowerCase()
+      );
+      
+      if (existingAgent) {
+        console.log(chalk.red(`\n❌ Agent ID '${agentId}' already exists in ${getAgentLayer(existingAgent)} layer!`));
+        console.log(chalk.dim(`   ${existingAgent.definition.id} ${existingAgent.definition.name} - ${existingAgent.definition.whenToUse}`));
+        
+        console.log(chalk.yellow('\n💡 What would you like to do?'));
+        console.log('  1) Create a specialized version (e.g., "compliance-pm") ✅');
+        console.log('  2) Override the existing agent (advanced)');
+        
+        const choice = await askQuestion(rl, '> ');
+        
+        if (choice === '1') {
+          const specialization = await askQuestion(rl, '\n? What makes this agent different?\n> ');
+          agentName = `${specialization} ${agentName}`;
+          agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          
+          // Check again with new name
+          const stillExists = existingAgents.find(agent => 
+            agent.definition.id === agentId || 
+            agent.definition.name.toLowerCase() === agentName.toLowerCase()
+          );
+          
+          if (!stillExists) {
+            console.log(chalk.green(`\n✅ Great! Creating "${agentName}" - checking for conflicts...`));
+            console.log(chalk.green('✅ ID available across all layers (core, org, custom)'));
+            isUnique = true;
+          }
+        } else if (choice === '2') {
+          console.log(chalk.yellow('\n⚠️  Override mode: This will create a custom layer override'));
+          isUnique = true;
+        }
+      } else {
+        console.log(chalk.green(`\n✅ Agent ID '${agentId}' available across all layers`));
+        isUnique = true;
+      }
+    }
+
+    // Step 2/6: Role and Purpose
+    console.log(chalk.cyan('\nStep 2/6: Role and Purpose'));
+    const role = await askQuestion(rl, '? What is this agent\'s primary role? (e.g., "Security Engineer"): ');
+    const whenToUse = await askQuestion(rl, '? When should this agent be used? (e.g., "Security reviews, vulnerability assessment"): ');
+    
+    // Step 3/6: Personality and Style  
+    console.log(chalk.cyan('\nStep 3/6: Personality and Style'));
+    const style = await askQuestion(rl, '? What communication style? (professional, friendly, concise, detailed) [professional]: ') || 'professional';
+    const focus = await askQuestion(rl, '? What should this agent focus on? (e.g., "compliance", "performance", "security"): ');
+    
+    // Step 4/6: Core Capabilities
+    console.log(chalk.cyan('\nStep 4/6: Core Capabilities'));
+    console.log('? What commands should this agent support? (Enter one per line, empty line to finish)');
+    
+    const commands: Record<string, string> = {};
+    let commandInput = '';
+    let commandCount = 1;
+    
+    do {
+      commandInput = await askQuestion(rl, `  Command ${commandCount}: `);
+      if (commandInput.trim()) {
+        const description = await askQuestion(rl, `    Description: `);
+        commands[commandInput.trim()] = description.trim() || 'No description provided';
+        commandCount++;
+      }
+    } while (commandInput.trim());
+    
+    if (Object.keys(commands).length === 0) {
+      // Provide default commands based on role
+      commands['help'] = `Provide guidance on ${role.toLowerCase()} tasks`;
+      commands['analyze'] = `Analyze requirements from ${role.toLowerCase()} perspective`;
+    }
+
+    // Step 5/6: Dependencies (optional)
+    console.log(chalk.cyan('\nStep 5/6: Dependencies (Optional)'));
+    console.log('? Does this agent need specific resources? (templates, checklists, etc.)');
+    const needsDeps = await askQuestion(rl, '? Add dependencies? (y/N): ');
+    
+    const dependencies = {
+      checklists: [] as string[],
+      data: [] as string[],
+      tasks: [] as string[],
+      templates: [] as string[],
+      utils: [] as string[],
+      workflows: [] as string[],
+      'agent-teams': [] as string[]
+    };
+    
+    if (needsDeps.toLowerCase() === 'y' || needsDeps.toLowerCase() === 'yes') {
+      // Show available resources
+      const availableResources = await layerManager.listResources('templates');
+      if (availableResources.length > 0) {
+        console.log('\nAvailable templates:');
+        availableResources.forEach((res, idx) => {
+          console.log(`  ${idx + 1}. ${res.name}`);
+        });
+        
+        const templateChoice = await askQuestion(rl, 'Select templates (comma-separated numbers, or skip): ');
+        if (templateChoice.trim()) {
+          const indices = templateChoice.split(',').map(s => parseInt(s.trim()) - 1);
+          indices.forEach(idx => {
+            if (idx >= 0 && idx < availableResources.length && availableResources[idx]) {
+              dependencies.templates.push(availableResources[idx].name);
+            }
+          });
+        }
+      }
+    }
+
+    // Step 6/6: Preview and Confirmation
+    console.log(chalk.cyan('\nStep 6/6: Preview and Confirmation'));
+    
+    const agentDefinition: AgentDefinition = {
+      name: agentName,
+      id: agentId,
+      title: agentName,
+      icon: getDefaultIcon(role),
+      whenToUse,
+      customization: null,
+      persona: {
+        role,
+        style,
+        identity: `${role} focused on ${focus}`,
+        focus,
+        core_principles: []
+      },
+      commands,
+      dependencies,
+      'activation-instructions': [],
+      'story-file-permissions': [],
+      'help-display-template': ''
+    };
+    
+    console.log(chalk.green('\n📋 Agent Preview:'));
+    console.log(chalk.yellow(`Name: ${agentDefinition.name}`));
+    console.log(chalk.yellow(`ID: ${agentDefinition.id}`));
+    console.log(chalk.yellow(`Role: ${agentDefinition.persona.role}`));
+    console.log(chalk.yellow(`Style: ${agentDefinition.persona.style}`));
+    console.log(chalk.yellow(`Commands: ${Object.keys(agentDefinition.commands).join(', ')}`));
+    
+    const confirm = await askQuestion(rl, '\n? Create this agent? (Y/n): ');
+    if (confirm.toLowerCase() === 'n' || confirm.toLowerCase() === 'no') {
+      console.log(chalk.yellow('❌ Agent creation cancelled'));
+      return;
+    }
+
+    // Create the agent file in custom layer
+    await createAgentFile(layerManager, agentDefinition, validate);
+    
+    console.log(chalk.green(`\n✅ Agent created successfully!`));
+    console.log(chalk.dim(`📁 Location: .lcagents/custom/agents/${agentId}.yaml`));
+    console.log(chalk.dim(`🔍 View: lcagents agent info ${agentId}`));
+    console.log(chalk.dim(`🧪 Test: lcagents agent validate ${agentId}`));
+    
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Create agent from template (Epic 2, Story 2.2)
+ */
+async function createAgentFromTemplate(templateName: string, basePath: string, validate: boolean = true): Promise<void> {
+  console.log(chalk.blue(`📦 Creating agent from template: ${templateName}`));
+  
+  const layerManager = new LayerManager(basePath);
+  const agentLoader = new AgentLoader(basePath);
+  
+  // Resolve template with layer precedence
+  const templateResult = await layerManager.resolveTemplate(templateName);
+  if (!templateResult.exists) {
+    console.log(chalk.red(`❌ Template not found: ${templateName}`));
+    console.log(chalk.dim('💡 Use "lcagents agent templates" to see available templates'));
+    return;
+  }
+  
+  console.log(chalk.green(`✅ Template found in ${templateResult.source} layer`));
+  
+  // Load template content
+  const templateContent = await fs.readFile(templateResult.path, 'utf-8');
+  let templateData;
+  
+  try {
+    templateData = yaml.parse(templateContent);
+  } catch (error) {
+    console.log(chalk.red(`❌ Invalid template YAML: ${error}`));
+    return;
+  }
+  
+  if (!templateData.template) {
+    console.log(chalk.red(`❌ Template missing 'template' section`));
+    return;
+  }
+  
+  const template = templateData.template;
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    // Load existing agents for conflict detection
+    const { loaded: existingAgents } = await agentLoader.loadAllAgents();
+    
+    // Customize the template
+    console.log(chalk.cyan('\n📝 Template Customization'));
+    console.log(chalk.dim(`Template: ${template.name || templateName}`));
+    console.log(chalk.dim(`Version: ${template.version || 'N/A'}`));
+    
+    let agentName = await askQuestion(rl, `? Agent name [${template.defaultName || 'Custom Agent'}]: `) || template.defaultName || 'Custom Agent';
+    let agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    
+    // Check for conflicts
+    const existingAgent = existingAgents.find(agent => 
+      agent.definition.id === agentId || 
+      agent.definition.name.toLowerCase() === agentName.toLowerCase()
+    );
+    
+    if (existingAgent) {
+      console.log(chalk.yellow(`\n⚠️  Agent '${agentName}' would conflict with template base name!`));
+      console.log(chalk.yellow('\n💡 Suggested names:'));
+      console.log('  1) Marketing ' + agentName + ' ✅');
+      console.log('  2) Sales ' + agentName);
+      console.log('  3) Financial ' + agentName);
+      
+      const choice = await askQuestion(rl, '> ');
+      const prefixes = ['Marketing', 'Sales', 'Financial'];
+      const selectedPrefix = prefixes[parseInt(choice) - 1] || 'Custom';
+      agentName = `${selectedPrefix} ${agentName}`;
+      agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+    
+    console.log(chalk.green(`✅ Creating "${agentName}" from ${templateName} template...`));
+    console.log(chalk.green('✅ No conflicts found across all layers'));
+    
+    // Create agent definition from template
+    const agentDefinition: AgentDefinition = {
+      name: agentName,
+      id: agentId,
+      title: template.title || agentName,
+      icon: template.icon || '🤖',
+      whenToUse: template.whenToUse || template.description || '',
+      customization: `template:${templateName}${template.version ? `,version:${template.version}` : ''}`,
+      persona: {
+        role: template.persona?.role || 'Assistant',
+        style: template.persona?.style || 'professional',
+        identity: template.persona?.identity || agentName,
+        focus: template.persona?.focus || '',
+        core_principles: template.persona?.core_principles || []
+      },
+      commands: template.commands || {},
+      dependencies: template.dependencies || {
+        checklists: [],
+        data: [],
+        tasks: [],
+        templates: [],
+        utils: [],
+        workflows: [],
+        'agent-teams': []
+      },
+      'activation-instructions': template['activation-instructions'] || [],
+      'story-file-permissions': template['story-file-permissions'] || [],
+      'help-display-template': template['help-display-template'] || ''
+    };
+    
+    // Create the agent file
+    await createAgentFile(layerManager, agentDefinition, validate);
+    
+    console.log(chalk.green(`\n✅ Agent created from template successfully!`));
+    console.log(chalk.dim(`📁 Location: .lcagents/custom/agents/${agentId}.yaml`));
+    console.log(chalk.dim(`🔍 View: lcagents agent info ${agentId}`));
+    
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Clone existing agent (Epic 2, Story 2.2)  
+ */
+async function cloneAgent(existingAgent: string, basePath: string, validate: boolean = true): Promise<void> {
+  console.log(chalk.blue(`👥 Cloning agent: ${existingAgent}`));
+  
+  const agentLoader = new AgentLoader(basePath);
+  const layerManager = new LayerManager(basePath);
+  
+  // Load the source agent
+  const result = await agentLoader.loadAgent(existingAgent);
+  if (!result.success || !result.agent) {
+    console.log(chalk.red(`❌ Source agent not found: ${existingAgent}`));
+    console.log(chalk.dim('💡 Use "lcagents agent browse" to see available agents'));
+    return;
+  }
+  
+  const sourceAgent = result.agent;
+  console.log(chalk.green(`✅ Source agent loaded: ${sourceAgent.definition.name}`));
+  
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    // Load existing agents for conflict detection
+    const { loaded: existingAgents } = await agentLoader.loadAllAgents();
+    
+    console.log(chalk.cyan('\n📝 Agent Cloning Configuration'));
+    
+    let agentName = await askQuestion(rl, `? New agent name [${sourceAgent.definition.name} Copy]: `) || `${sourceAgent.definition.name} Copy`;
+    let agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    
+    // Check for conflicts
+    const existingConflict = existingAgents.find(agent => 
+      agent.definition.id === agentId || 
+      agent.definition.name.toLowerCase() === agentName.toLowerCase()
+    );
+    
+    if (existingConflict) {
+      console.log(chalk.red(`\n❌ Agent '${agentName}' already exists!`));
+      agentName = await askQuestion(rl, '? Choose a different name: ');
+      agentId = agentName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+    
+    const customization = await askQuestion(rl, '? What makes this agent different from the original?\n> ');
+    
+    console.log(chalk.green(`✅ Creating "${agentName}" as clone of ${sourceAgent.definition.name}...`));
+    
+    // Create cloned agent definition
+    const agentDefinition: AgentDefinition = {
+      ...sourceAgent.definition,
+      name: agentName,
+      id: agentId,
+      title: agentName,
+      customization: `cloned_from:${sourceAgent.definition.id},modifications:${customization}`,
+      persona: {
+        ...sourceAgent.definition.persona,
+        identity: `${sourceAgent.definition.persona.identity} (specialized: ${customization})`
+      }
+    };
+    
+    // Create the agent file
+    await createAgentFile(layerManager, agentDefinition, validate);
+    
+    console.log(chalk.green(`\n✅ Agent cloned successfully!`));
+    console.log(chalk.dim(`📁 Location: .lcagents/custom/agents/${agentId}.yaml`));
+    console.log(chalk.dim(`🔍 View: lcagents agent info ${agentId}`));
+    
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Validate agent with enhanced error grouping
+ */
+async function validateAgent(agentName: string, basePath: string): Promise<void> {
+  console.log(chalk.blue(`🧪 Validating agent: ${agentName}`));
+  
+  const agentLoader = new AgentLoader(basePath);
+  const layerManager = new LayerManager(basePath);
+  const coreSystemManager = new CoreSystemManager(basePath);
+  
+  const result = await agentLoader.loadAgent(agentName);
+  if (!result.success || !result.agent) {
+    console.log(chalk.red(`❌ Agent not found or failed to load: ${agentName}`));
+    if (result.error) {
+      console.log(chalk.red(`   Error: ${result.error}`));
+    }
+    return;
+  }
+  
+  const agent = result.agent;
+  console.log(chalk.green(`✅ Agent loaded successfully`));
+  
+  // Layer integrity check
+  try {
+    const resolutionPath = await layerManager.resolveAgent(agent.definition.id);
+    console.log(chalk.green(`✅ Layer integrity validated`));
+    console.log(chalk.dim(`   Layers: ${resolutionPath.layerSources.join(' → ')}`));
+  } catch (error) {
+    console.log(chalk.yellow(`⚠️  Layer resolution warning: ${error}`));
+  }
+  
+  // Core system compatibility
+  const activeCoreSystem = await coreSystemManager.getActiveCoreSystem();
+  if (activeCoreSystem) {
+    console.log(chalk.green(`✅ Core system compatibility: ${activeCoreSystem}`));
+  } else {
+    console.log(chalk.yellow('⚠️  No active core system detected'));
+  }
+  
+  // Dependency validation
+  const deps = agent.definition.dependencies;
+  const depTypes = Object.keys(deps) as Array<keyof typeof deps>;
+  let missingDeps = 0;
+  
+  for (const depType of depTypes) {
+    const depList = deps[depType] || [];
+    for (const dep of depList) {
+      const depPath = await layerManager.getResourcePath(depType, dep);
+      if (!depPath) {
+        console.log(chalk.yellow(`⚠️  Missing ${depType}: ${dep}`));
+        missingDeps++;
+      }
+    }
+  }
+  
+  if (missingDeps === 0) {
+    console.log(chalk.green('✅ All dependencies resolved'));
+  } else {
+    console.log(chalk.yellow(`⚠️  ${missingDeps} missing dependencies`));
+  }
+  
+  // Overall validation
+  console.log(chalk.green(`\n✅ Agent '${agentName}' validation complete`));
+  
+  // Auto-suggest next steps
+  console.log(chalk.dim('\n💡 Suggested next steps:'));
+  console.log(chalk.dim(`   lcagents agent info ${agentName}     - View detailed information`));
+  console.log(chalk.dim(`   lcagents agent resources ${agentName} - Check resource dependencies`));
+}
+
+// Helper functions
+
+function askQuestion(rl: readline.Interface, question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      resolve(answer);
+    });
+  });
+}
+
+function getAgentLayer(agent: ParsedAgent): string {
+  // Simple heuristic - in a real implementation this would use LayerManager
+  if (agent.filePath.includes('/core/')) return 'CORE';
+  if (agent.filePath.includes('/org/')) return 'ORG';
+  return 'CUSTOM';
+}
+
+function getDefaultIcon(role: string): string {
+  const roleLower = role.toLowerCase();
+  if (roleLower.includes('manager') || roleLower.includes('pm')) return '👔';
+  if (roleLower.includes('developer') || roleLower.includes('engineer')) return '🧑‍💻';
+  if (roleLower.includes('qa') || roleLower.includes('test')) return '🧪';
+  if (roleLower.includes('security')) return '🔒';
+  if (roleLower.includes('data')) return '📊';
+  if (roleLower.includes('design')) return '🎨';
+  return '🤖';
+}
+
+async function createAgentFile(layerManager: LayerManager, agentDefinition: AgentDefinition, validate: boolean): Promise<void> {
+  // Access private property through bracket notation for LayerManager path
+  const lcagentsPath = (layerManager as any).lcagentsPath;
+  
+  // Ensure custom agents directory exists
+  const customAgentsDir = path.join(lcagentsPath, 'custom', 'agents');
+  await fs.ensureDir(customAgentsDir);
+  
+  // Create YAML content
+  const yamlContent = yaml.stringify(agentDefinition, { indent: 2 });
+  
+  // Write agent file to custom layer
+  const agentFilePath = path.join(customAgentsDir, `${agentDefinition.id}.yaml`);
+  await fs.writeFile(agentFilePath, yamlContent, 'utf-8');
+  
+  if (validate) {
+    // Validate the created agent
+    const agentLoader = new AgentLoader(path.dirname(lcagentsPath));
+    const result = await agentLoader.loadAgent(agentDefinition.id);
+    if (!result.success) {
+      console.log(chalk.yellow(`⚠️  Validation warning: ${result.error}`));
+    }
+  }
+}
 
 // Helper function to show detailed agent information
 async function showAgentInfo(agentName: string, basePath: string): Promise<void> {

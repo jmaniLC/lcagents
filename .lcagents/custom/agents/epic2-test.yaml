@@ -1,0 +1,26 @@
+name: Epic 2 Test Agent
+id: epic2-test
+title: Epic 2 Test Agent
+icon: 🧪
+whenToUse: For testing Epic 2 guided agent creation functionality
+customization: null
+persona:
+  role: Test Engineer
+  style: professional
+  identity: Epic 2 Test Agent
+  focus: testing
+  core_principles: []
+commands:
+  test: Run tests for Epic 2 functionality
+  validate: Validate Epic 2 implementation
+dependencies:
+  checklists: []
+  data: []
+  tasks: []
+  templates: []
+  utils: []
+  workflows: []
+  agent-teams: []
+activation-instructions: []
+story-file-permissions: []
+help-display-template: ""

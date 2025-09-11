@@ -32,10 +32,39 @@ Provide guided creation and management of basic agent resources including checkl
 
 ### CLI Commands Implemented
 ```bash
-lcagents res create <type> <name>          # Create new resources using ResourceResolver with enhanced validation
-lcagents res list [type] [layer]           # Layer-aware resource listing with AgentLoader.loadAllAgents() integration
-lcagents res info <resource-name>          # Detailed resource info with enhanced error grouping and numbered sequences
-lcagents res move <resource> <target-layer> # Safe resource movement with conflict detection using AgentLoader patterns
+lcagents resource create <type> <name>          # Create new resources with rule-based layer intelligence
+lcagents resource list [type] [layer]           # Layer-aware resource listing with rule-validated enhancement detection
+lcagents resource info <resource-name>          # Detailed resource info with rule-based layer analysis
+lcagents resource move <resource> <target-layer> # Safe resource movement with rule validation between layers
+```
+
+### Runtime CLI Execution Sequences
+
+#### Intelligent Resource Creation Flow (Rule-Validated)
+```bash
+# Rule-based layer-intelligent resource creation
+lcagents resource create <type> <name>
+  ├── Pre-analysis: LCAgentsRuleEngine.validateOperation() → ResourceResolver.analyzeResourceLandscape()
+  ├── Internal: RuntimeRuleEngine.enforceResourceRules() → LayerManager.suggestOptimalLayer()
+  └── Post-create: LCAgentsRuleEngine.validateOperation() → Complete rule validation
+
+# Layer-aware resource discovery with rule-based enhancement suggestions
+lcagents resource list [type] [layer]
+  ├── Internal: RuntimeRuleEngine.validateListOperation() → LayerManager.scanAllLayers()
+  ├── Internal: LCAgentsRuleEngine.categorizeResources() → ResourceResolver.categorizeResources()
+  └── Output: Structured listing with rule-based enhancement opportunities
+
+# Comprehensive resource analysis with rule validation
+lcagents resource info <resource-name>
+  ├── Internal: RuntimeRuleEngine.validateInfoAccess() → LayerManager.locateResource()
+  ├── Internal: LCAgentsRuleEngine.loadResourceGraph() → ResourceResolver.loadResourceGraph()
+  └── Output: Complete resource profile with rule-based improvement suggestions
+
+# Safe resource movement with rule-based dependency validation
+lcagents resource move <resource> <target-layer>
+  ├── Pre-validation: LCAgentsRuleEngine.validateLayerMovement() → LayerManager.analyzeMoveImpact()
+  ├── Internal: RuntimeRuleEngine.checkDependencyChain() → ResourceResolver.checkDependencyChain()
+  └── Post-move: LCAgentsRuleEngine.validateOperation() → Complete validation
 ```
 
 ### Runtime CLI Execution Sequences
@@ -43,34 +72,34 @@ lcagents res move <resource> <target-layer> # Safe resource movement with confli
 #### Intelligent Resource Creation Flow
 ```bash
 # Layer-intelligent resource creation
-lcagents res create <type> <name>
+lcagents resource create <type> <name>
   ├── Pre-analysis: ResourceResolver.analyzeResourceLandscape() → LayerManager.suggestOptimalLayer()
   ├── Internal: CoreSystemManager.validateResourceType() → AgentLoader.checkDependencies()
   ├── Intelligence: LayerManager.detectEnhancementOpportunities() → ResourceResolver.suggestBaseResources()
   ├── Wizard: Layer placement and enhancement prompts
   ├── Internal: ResourceResolver.createResource() → LayerManager.placeInOptimalLayer()
-  └── Post-create: lcagents res validate <name> (automatic)
+  └── Post-create: lcagents resource validate <name> (automatic)
 
 # Layer-aware resource discovery with enhancement suggestions
-lcagents res list [type] [layer]
+lcagents resource list [type] [layer]
   ├── Internal: LayerManager.scanAllLayers() → ResourceResolver.categorizeResources()
   ├── Enhancement: ResourceResolver.detectSimilarResources() → LayerManager.suggestConsolidation()
   ├── Analysis: CoreSystemManager.identifyGaps() → AgentLoader.suggestMissingResources()
   └── Output: Structured listing with enhancement opportunities
 
 # Comprehensive resource analysis
-lcagents res info <resource-name>
+lcagents resource info <resource-name>
   ├── Internal: LayerManager.locateResource() → ResourceResolver.loadResourceGraph()
   ├── Analysis: AgentLoader.analyzeDependencies() → CoreSystemManager.assessCompatibility()
   ├── Intelligence: ResourceResolver.identifyEnhancementCandidates() → LayerManager.suggestOptimizations()
   └── Output: Complete resource profile with improvement suggestions
 
 # Safe resource movement with dependency validation
-lcagents res move <resource> <target-layer>
+lcagents resource move <resource> <target-layer>
   ├── Pre-validation: LayerManager.analyzeMoveImpact() → ResourceResolver.checkDependencyChain()
   ├── Internal: CoreSystemManager.validateLayerPermissions() → AgentLoader.backupResource()
   ├── Safety: ResourceResolver.updateDependencyReferences() → LayerManager.preserveIntegrity()
-  └── Post-move: lcagents res validate <resource> (automatic)
+  └── Post-move: lcagents resource validate <resource> (automatic)
 ```
 
 ### Checklist Uniqueness Validation
@@ -101,13 +130,15 @@ Step 1/4: Checklist Purpose
 ```
 
 ### Technical Implementation Details
-- **Resource Creation**: Use ResourceResolver to place checklists in .lcagents/custom/checklists/ with layer-aware override intelligence
-- **Template System**: Leverage existing template infrastructure from .lcagents/core/.{coreSystem}/templates/, .lcagents/org/templates/, .lcagents/custom/templates/
-- **Industry Standards**: Create checklist templates for SOX, GDPR, Security using template YAML format with intelligent specialization suggestions
-- **Agent Integration**: Update AgentDefinition.dependencies.checklists for workflow integration with layer resolution
-- **Version Control**: Use LayerManager for checklist versioning across .lcagents/core/, .lcagents/org/, .lcagents/custom/ with intelligent override management
-- **Validation**: Integrate with ResourceResolver.validateAllResources() for consistency across layered structure
-- **Intelligent Override Logic**: Suggest creating specialized versions when core checklists exist (e.g., "financial-sox-compliance" vs. "sox-compliance")
+- **Rule Engine Integration**: All resource creation operations validated through `.lcagents/runtime/rules/engine/` with comprehensive policy enforcement
+- **Resource Creation**: Use ResourceResolver with **LCAgentsRuleEngine** validation to place checklists in .lcagents/custom/checklists/ with rule-based layer-aware override intelligence
+- **Template System**: Leverage existing template infrastructure with **runtime rule validation** from all template layers
+- **Industry Standards**: Create checklist templates for SOX, GDPR, Security using template YAML format with **rule-based intelligent specialization suggestions**
+- **Agent Integration**: Update AgentDefinition.dependencies.checklists for workflow integration with **rule-validated layer resolution**
+- **Version Control**: Use LayerManager with **LCAgentsRuleEngine** for checklist versioning across layers with rule-based intelligent override management
+- **Validation**: Integrate with ResourceResolver.validateAllResources() and **runtime rule engine** for consistency across layered structure
+- **Intelligent Override Logic**: Use **LCAgentsRuleEngine** to suggest creating specialized versions when core checklists exist with rule-based naming suggestions
+- **Policy Compliance**: All checklist operations validated against policies from .lcagents/org/policies/ and .lcagents/custom/policies/ via runtime rule engine
 
 ### Definition of Done
 - [ ] Industry-standard checklist templates available via ResourceResolver.listResources('templates')
@@ -138,10 +169,10 @@ Step 1/4: Checklist Purpose
 
 ### CLI Commands Implemented
 ```bash
-lcagents res create kb                             # Create shared knowledge base using ResourceResolver with enhanced validation
-lcagents res create kb --import <file>             # Import existing documentation with AgentLoader.loadAllAgents() conflict detection
-lcagents res enhance kb <name>                     # Add pod-specific knowledge with enhanced error grouping
-lcagents res merge kb <source> <target>            # Intelligently merge knowledge bases with validation using AgentLoader patterns
+lcagents res create kb                             # Create shared knowledge base with rule-based intelligent layer placement using ResourceResolver
+lcagents res create kb --import <file>             # Import existing documentation with rule-validated context-aware placement into appropriate layer
+lcagents res enhance kb <name>                     # Add pod-specific knowledge to existing core knowledge base with rule validation
+lcagents res merge kb <source> <target>            # Intelligently merge knowledge bases across layers with rule compliance
 ```
 
 ### Intelligent Knowledge Base Management
@@ -177,9 +208,15 @@ Step 1/4: Knowledge Type
 - **Search Capabilities**: Build on ResourceResolver.listResources('data') for knowledge discovery across all layers with context aggregation
 - **Version Control**: Use LayerManager for knowledge base versioning with intelligent override and enhancement capabilities
 - **Knowledge Synthesis**: Allow multiple knowledge bases with same topic across layers for richer, context-aware agent responses### Technical Implementation Details
-- **Data Resource Management**: Use ResourceResolver to manage knowledge bases with layer-aware conflict checking across .lcagents/custom/data/, .lcagents/org/data/, .lcagents/core/.{coreSystem}/data/
-- **Multi-Format Import**: Support import of MD, PDF, DOCX into data resources with automatic uniqueness validation
-- **Content Organization**: Structure knowledge bases using existing data resource patterns with conflict detection
+- **Rule Engine Integration**: All knowledge base operations validated through `.lcagents/runtime/rules/engine/` with comprehensive policy enforcement
+- **Data Resource Management**: Use ResourceResolver with **LCAgentsRuleEngine** validation to manage knowledge bases with rule-based intelligent layering across data layers
+- **Multi-Format Import**: Support import of MD, PDF, DOCX into data resources with **rule-based automatic layer placement** based on content analysis
+- **Content Organization**: Structure knowledge bases using existing data resource patterns with **runtime rule-validated intelligent cross-layer synthesis**
+- **Agent Integration**: Link knowledge bases via AgentDefinition.dependencies.data with **rule-validated automatic layer resolution** for enhanced context
+- **Search Capabilities**: Build on ResourceResolver.listResources('data') with **LCAgentsRuleEngine** for knowledge discovery across all layers with rule-compliant context aggregation
+- **Version Control**: Use LayerManager with **runtime rule validation** for knowledge base versioning with intelligent override and enhancement capabilities
+- **Knowledge Synthesis**: Allow multiple knowledge bases with same topic across layers using **rule-based validation** for richer, context-aware agent responses
+- **Policy Compliance**: All knowledge base operations validated against policies from .lcagents/org/policies/ and .lcagents/custom/policies/ via runtime rule engine
 - **Agent Integration**: Link knowledge bases via AgentDefinition.dependencies.data with validation
 - **Search Capabilities**: Build on ResourceResolver.listResources('data') for knowledge discovery with conflict highlighting
 - **Version Control**: Use LayerManager for knowledge base versioning with automatic conflict resolution
@@ -214,10 +251,10 @@ Step 1/4: Knowledge Type
 
 ### CLI Commands Implemented
 ```bash
-lcagents res create task                           # Create reusable workflow task using ResourceResolver with enhanced validation
-lcagents res validate task <name>                  # Validate task uniqueness using AgentLoader.loadAllAgents() with error grouping
-lcagents res list tasks                            # List all tasks with enhanced error reporting and numbered sequences
-lcagents task clone <existing> <new-name>          # Clone existing task with AgentLoader conflict validation patterns
+lcagents res create task                           # Create reusable workflow task with uniqueness checking using ResourceResolver
+lcagents res validate task <name>                  # Validate task uniqueness across all layers
+lcagents res list tasks                            # List all tasks across layers showing potential conflicts
+lcagents task clone <existing> <new-name>          # Clone existing task with conflict validation
 ```
 
 ### Task Workflow Conflict Management
