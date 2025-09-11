@@ -34,10 +34,10 @@ Enable safe modification and customization of existing agents without breaking f
 
 ### CLI Commands Implemented
 ```bash
-lcagents agent modify <agent-name>              # Interactive modification with layer protection
-lcagents agent edit-config <agent-name>         # Direct configuration editing with validation
-lcagents agent revert <agent-name> [version]    # Safe reversion with backup preservation
-lcagents agent backup <agent-name>              # Create explicit backup before modification
+lcagents agent modify <agent-id>                # Interactive modification using AgentLoader.loadAllAgents() with layer protection
+lcagents agent edit-config <agent-id>           # Direct configuration editing with AgentLoader.validateAgent()
+lcagents agent revert <agent-id> [version]      # Safe reversion with backup preservation and error grouping
+lcagents agent backup <agent-id>                # Create explicit backup before modification with validation
 ```
 
 ### Runtime CLI Execution Sequences
@@ -45,49 +45,49 @@ lcagents agent backup <agent-name>              # Create explicit backup before 
 #### Safe Agent Modification Flow
 ```bash
 # Pre-modification analysis and backup
-lcagents agent backup <agent-name>
+lcagents agent backup <agent-id>
   ├── Internal: LayerManager.determineAgentLayer() → AgentLoader.createBackup()
   ├── Internal: CoreSystemManager.validateModificationPermissions()
-  └── Output: Backup location and modification safety assessment
+  └── Output: Backup location and modification safety assessment with error grouping
 
 # Interactive agent modification with layer protection
-lcagents agent modify <agent-name>
-  ├── Pre-req: agent backup <agent-name> (automatic if not recent)
-  ├── Internal: AgentLoader.loadAgent() → LayerManager.analyzeModificationScope()
+lcagents agent modify <agent-id>
+  ├── Pre-req: agent backup <agent-id> (automatic if not recent)
+  ├── Internal: AgentLoader.loadAllAgents() → LayerManager.analyzeModificationScope()
   ├── Protection: CoreSystemManager.blockCoreModifications() (if core layer)
   ├── Internal: ResourceResolver.checkDependencyImpact() → LayerManager.suggestSafeModifications()
-  ├── Wizard: Safe modification prompts with impact analysis
+  ├── Wizard: Safe modification prompts with enhanced error reporting
   ├── Internal: AgentLoader.applyModifications() → LayerManager.preserveLayerIntegrity()
-  └── Post-modify: lcagents agent validate <agent-name> (automatic)
+  └── Post-modify: lcagents agent validate <agent-id> (automatic with error grouping)
 
 # Direct configuration editing with enhanced validation
-lcagents agent edit-config <agent-name>
-  ├── Pre-analysis: lcagents agent info <agent-name> (for current config)
+lcagents agent edit-config <agent-id>
+  ├── Pre-analysis: lcagents agent info <agent-id> (for current config with numbered commands)
   ├── Internal: LayerManager.determineEditScope() → CoreSystemManager.validateConfigChanges()
   ├── Editor: Launch with enhanced validation hooks
   ├── Real-time: ResourceResolver.validateConfigSyntax() → AgentLoader.previewChanges()
-  └── Post-edit: lcagents agent validate <agent-name> (automatic)
+  └── Post-edit: lcagents agent validate <agent-id> (automatic with enhanced error grouping)
 
 # Safe reversion with backup management
-lcagents agent revert <agent-name> [version]
+lcagents agent revert <agent-id> [version]
   ├── Internal: LayerManager.loadBackupHistory() → AgentLoader.analyzeRevertImpact()
   ├── Internal: ResourceResolver.validateRevertDependencies() → CoreSystemManager.ensureCompatibility()
-  ├── Wizard: Revert confirmation with impact preview
-  └── Post-revert: lcagents agent validate <agent-name> (automatic)
+  ├── Wizard: Revert confirmation with impact preview and enhanced error reporting
+  └── Post-revert: lcagents agent validate <agent-id> (automatic with error grouping)
 ```
 
 ### Safe Modification Flow
 ```
-🔧 Modify Agent: PM (Product Manager)
+🔧 Modify Agent: pm (Product Manager)
 
 ⚠️  You're modifying a CORE agent. Changes will be saved as overrides in CUSTOM layer.
 ✅ Original agent will remain intact and can be restored.
 
 Current capabilities:
-├── ✅ Create requirements documents  
-├── ✅ Plan features and roadmaps
-├── ✅ Write user stories
-└── ✅ Manage stakeholder communication
+1. Create requirements documents  
+2. Plan features and roadmaps
+3. Write user stories
+4. Manage stakeholder communication
 
 What would you like to modify?
   1) Add new capabilities
@@ -146,9 +146,9 @@ Command name: create-compliance-prd
 ### CLI Commands Implemented
 ```bash
 # Command management integrated into modify wizard with conflict detection
-lcagents agent modify <agent-name>              # Includes command management via AgentDefinition.commands with uniqueness validation
-lcagents command validate <command-name>        # Check command conflicts across all agents and layers
-lcagents command suggest <description>           # Suggest command names that avoid conflicts
+lcagents agent modify <agent-id>                # Includes command management using AgentLoader.loadAllAgents() with conflict detection
+lcagents command validate <command-name>        # Check command conflicts across all agents using enhanced error grouping
+lcagents command suggest <description>           # Suggest command names that avoid conflicts with validation
 ```
 
 ### Command Conflict Resolution
@@ -214,13 +214,13 @@ Command name: create-story
 
 ### CLI Commands Implemented
 ```bash
-lcagents agent add checklist <agent-name>      # Add quality checklist with uniqueness validation using ResourceResolver
-lcagents agent add kb <agent-name>             # Add documentation/knowledge base with conflict checking via data resources
-lcagents agent add task <agent-name>           # Add workflow task with uniqueness validation using ResourceResolver
-lcagents agent add template <agent-name>       # Add document template with conflict detection via ResourceResolver
-lcagents agent add workflow <agent-name>       # Create multi-agent workflows with uniqueness checking using ResourceResolver
-lcagents resource validate <resource-type>     # Validate resource uniqueness across all layers
-lcagents resource suggest-name <resource-type> # Suggest unique names for new resources
+lcagents agent add checklist <agent-id>        # Add quality checklist using ResourceResolver with enhanced validation
+lcagents agent add kb <agent-id>               # Add documentation/knowledge base with AgentLoader.loadAllAgents() conflict checking
+lcagents agent add task <agent-id>             # Add workflow task with ResourceResolver uniqueness validation
+lcagents agent add template <agent-id>         # Add document template with enhanced conflict detection
+lcagents agent add workflow <agent-id>         # Create multi-agent workflows with error grouping validation
+lcagents resource validate <resource-type>     # Validate resource uniqueness across all layers with enhanced reporting
+lcagents resource suggest-name <resource-type> # Suggest unique names for new resources using AgentLoader patterns
 ```
 
 ### Resource Uniqueness Validation Flow

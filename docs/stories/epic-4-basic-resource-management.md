@@ -32,10 +32,10 @@ Provide guided creation and management of basic agent resources including checkl
 
 ### CLI Commands Implemented
 ```bash
-lcagents resource create <type> <name>          # Create new resources with layer intelligence
-lcagents resource list [type] [layer]           # Layer-aware resource listing with enhancement detection
-lcagents resource info <resource-name>          # Detailed resource info with layer analysis
-lcagents resource move <resource> <target-layer> # Safe resource movement between layers
+lcagents resource create <type> <name>          # Create new resources using ResourceResolver with enhanced validation
+lcagents resource list [type] [layer]           # Layer-aware resource listing with AgentLoader.loadAllAgents() integration
+lcagents resource info <resource-name>          # Detailed resource info with enhanced error grouping and numbered sequences
+lcagents resource move <resource> <target-layer> # Safe resource movement with conflict detection using AgentLoader patterns
 ```
 
 ### Runtime CLI Execution Sequences
@@ -138,10 +138,10 @@ Step 1/4: Checklist Purpose
 
 ### CLI Commands Implemented
 ```bash
-lcagents res create kb                             # Create shared knowledge base with intelligent layer placement using ResourceResolver
-lcagents res create kb --import <file>             # Import existing documentation with context-aware placement into appropriate layer
-lcagents res enhance kb <name>                     # Add pod-specific knowledge to existing core knowledge base
-lcagents res merge kb <source> <target>            # Intelligently merge knowledge bases across layers
+lcagents res create kb                             # Create shared knowledge base using ResourceResolver with enhanced validation
+lcagents res create kb --import <file>             # Import existing documentation with AgentLoader.loadAllAgents() conflict detection
+lcagents res enhance kb <name>                     # Add pod-specific knowledge with enhanced error grouping
+lcagents res merge kb <source> <target>            # Intelligently merge knowledge bases with validation using AgentLoader patterns
 ```
 
 ### Intelligent Knowledge Base Management
@@ -214,10 +214,10 @@ Step 1/4: Knowledge Type
 
 ### CLI Commands Implemented
 ```bash
-lcagents res create task                           # Create reusable workflow task with uniqueness checking using ResourceResolver
-lcagents res validate task <name>                  # Validate task uniqueness across all layers
-lcagents res list tasks                            # List all tasks across layers showing potential conflicts
-lcagents task clone <existing> <new-name>          # Clone existing task with conflict validation
+lcagents res create task                           # Create reusable workflow task using ResourceResolver with enhanced validation
+lcagents res validate task <name>                  # Validate task uniqueness using AgentLoader.loadAllAgents() with error grouping
+lcagents res list tasks                            # List all tasks with enhanced error reporting and numbered sequences
+lcagents task clone <existing> <new-name>          # Clone existing task with AgentLoader conflict validation patterns
 ```
 
 ### Task Workflow Conflict Management

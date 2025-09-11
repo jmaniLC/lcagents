@@ -35,8 +35,9 @@ Provide guided, wizard-based agent creation that enables non-technical users to 
 
 ### CLI Commands Implemented
 ```bash
-lcagents agent create                           # Guided wizard with uniqueness validation using AgentDefinition interface
-lcagents agent validate <agent-name>           # Validate agent configuration and check conflicts via LayerManager
+lcagents agent create                           # Guided wizard using AgentLoader.loadAllAgents() for conflict detection
+lcagents agent validate <agent-name>           # Validate using AgentLoader.validateAgent() with enhanced error grouping
+lcagents agent from-template <template>        # Create from parsed template metadata (name, version, output filename)
 ```
 
 ### Runtime CLI Execution Sequences
@@ -70,7 +71,30 @@ lcagents agent from-template <template>
   └── Post-create: lcagents agent validate <new-agent> (automatic)
 ```
 
-### Uniqueness Validation Flow
+### Uniqueness Validation Flow  
+```
+🚀 Agent Creation Wizard
+
+Step 1/6: Basic Information
+? What should your agent be called? (e.g., "Data Scientist"): PM
+
+⚠️  Some agents failed to load:
+   Agent validation failed: Missing required name field (PM)
+
+❌ Agent ID 'pm' already exists in CORE layer!
+   pm John [CORE] - Use for creating PRDs, product strategy, feature prioritization
+
+💡 What would you like to do?
+  1) Create a specialized version (e.g., "compliance-pm") ✅
+  2) Override the existing pm agent (advanced)
+> 1
+
+? What makes this PM different?
+> Focuses on security compliance and regulatory requirements
+
+✅ Great! Creating "compliance-pm" - checking for conflicts...
+✅ ID available across all layers (core, org, custom)
+```
 ```
 🚀 Agent Creation Wizard
 

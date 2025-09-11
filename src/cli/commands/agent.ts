@@ -1,5 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import * as fs from 'fs';
+import * as yaml from 'yaml';
 import { AgentLoader } from '../../core/AgentLoader';
 import { LayerManager } from '../../core/LayerManager';
 import { CoreSystemManager } from '../../core/CoreSystemManager';
@@ -43,26 +45,7 @@ function searchAgents(agents: ParsedAgent[], query: string): ParsedAgent[] {
   });
 }
 
-// Helper function to get template descriptions
-function getTemplateDescription(templateName: string): string {
-  const descriptions: { [key: string]: string } = {
-    'architecture-tmpl.yaml': 'System architecture and technical design template',
-    'brainstorming-output-tmpl.yaml': 'Structured brainstorming session output format',
-    'brownfield-architecture-tmpl.yaml': 'Architecture analysis for existing systems',
-    'brownfield-prd-tmpl.yaml': 'Product requirements for legacy system enhancements',
-    'competitor-analysis-tmpl.yaml': 'Competitive landscape and feature comparison analysis',
-    'front-end-architecture-tmpl.yaml': 'Frontend system design and component architecture',
-    'front-end-spec-tmpl.yaml': 'Frontend technical specifications and requirements',
-    'fullstack-architecture-tmpl.yaml': 'Complete application architecture template',
-    'market-research-tmpl.yaml': 'Market analysis and research findings template',
-    'prd-tmpl.yaml': 'Product Requirements Document for new features/products',
-    'project-brief-tmpl.yaml': 'High-level project overview and objectives template',
-    'qa-gate-tmpl.yaml': 'Quality assurance checkpoint and review template',
-    'story-tmpl.yaml': 'User story documentation and acceptance criteria template'
-  };
-  
-  return descriptions[templateName] || 'Template for agent workflow generation';
-}
+
 
 export const agentCommand = new Command('agent')
   .description('Discover, explore, and manage agents in the LCAgents ecosystem')
@@ -340,11 +323,27 @@ export const agentCommand = new Command('agent')
                               template.source === 'org' ? chalk.yellow('[ORG]') : 
                               chalk.magenta('[CUSTOM]');
             
-            // Get template description
-            const description = getTemplateDescription(template.name);
+            // Extract template metadata from YAML
+            let templateInfo = '';
+            try {
+              const content = fs.readFileSync(template.path, 'utf8');
+              const parsed = yaml.parse(content);
+              
+              if (parsed?.template) {
+                const t = parsed.template;
+                const name = t.name || 'Unknown';
+                const version = t.version || 'N/A';
+                const filename = t.output?.filename || 'N/A';
+                templateInfo = `${name} v${version} → ${filename}`;
+              } else {
+                templateInfo = template.name;
+              }
+            } catch (error) {
+              templateInfo = template.name;
+            }
             
             console.log(`   ${index + 1}. ${chalk.cyan(template.name)} ${layerBadge}`);
-            console.log(chalk.dim(`      ${description}`));
+            console.log(chalk.dim(`      ${templateInfo}`));
           });
 
           console.log(chalk.dim('\n💡 Use templates with: lcagents agent create --template <name>'));
