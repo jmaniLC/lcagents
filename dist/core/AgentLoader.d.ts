@@ -32,6 +32,10 @@ export declare class AgentLoader {
      */
     private parseCommands;
     /**
+     * Validate raw YAML data before processing
+     */
+    private validateRawYaml;
+    /**
      * Validate an agent definition
      */
     private validateAgent;

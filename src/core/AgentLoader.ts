@@ -67,7 +67,7 @@ export class AgentLoader {
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Agent validation failed: ${validation.errors.join(', ')}`
+          error: `${agentName}: Agent validation failed: ${validation.errors.join(', ')}`
         };
       }
 
@@ -130,8 +130,17 @@ export class AgentLoader {
         };
       }
 
+      // Validate the raw YAML data first
+      const rawValidation = this.validateRawYaml(yamlData);
+      if (!rawValidation.isValid) {
+        return {
+          success: false,
+          error: `${agentName}: Agent validation failed: ${rawValidation.errors.join(', ')}`
+        };
+      }
+
       const definition: AgentDefinition = {
-        name: agentName,
+        name: yamlData.name || agentName,
         id: yamlData.id || agentName,
         title: yamlData.title || yamlData.name || agentName,
         icon: yamlData.icon || '🤖',
@@ -272,7 +281,17 @@ export class AgentLoader {
   private parseCommands(commandsData: any): Record<string, string | AgentCommand> {
     const commands: Record<string, string | AgentCommand> = {};
     
-    if (typeof commandsData === 'object' && commandsData !== null) {
+    if (Array.isArray(commandsData)) {
+      // Handle array format: [{ commandName: description }, ...]
+      commandsData.forEach((item: any) => {
+        if (typeof item === 'object' && item !== null) {
+          for (const [name, desc] of Object.entries(item)) {
+            commands[name] = desc as string;
+          }
+        }
+      });
+    } else if (typeof commandsData === 'object' && commandsData !== null) {
+      // Handle object format: { commandName: description, ... }
       for (const [name, cmdData] of Object.entries(commandsData)) {
         if (typeof cmdData === 'string') {
           commands[name] = cmdData;
@@ -289,6 +308,41 @@ export class AgentLoader {
     }
     
     return commands;
+  }
+
+  /**
+   * Validate raw YAML data before processing
+   */
+  private validateRawYaml(yamlData: any): AgentValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Required fields validation
+    if (!yamlData.name) {
+      errors.push('Agent name is required');
+    }
+    
+    if (!yamlData.title) {
+      errors.push('Agent title is required');
+    }
+    
+    if (!yamlData.persona?.role) {
+      errors.push('Agent persona role is required');
+    }
+
+    if (!yamlData.commands) {
+      errors.push('Agent commands are required');
+    }
+
+    if (yamlData.persona && typeof yamlData.persona === 'string') {
+      errors.push('Agent persona must be an object, not a string');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
   }
 
   /**

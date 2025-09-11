@@ -88,7 +88,7 @@ class AgentLoader {
             if (!validation.isValid) {
                 return {
                     success: false,
-                    error: `Agent validation failed: ${validation.errors.join(', ')}`
+                    error: `${agentName}: Agent validation failed: ${validation.errors.join(', ')}`
                 };
             }
             // Cache the loaded agent
@@ -144,8 +144,16 @@ class AgentLoader {
                     error: `Invalid YAML structure in ${agentName}`
                 };
             }
+            // Validate the raw YAML data first
+            const rawValidation = this.validateRawYaml(yamlData);
+            if (!rawValidation.isValid) {
+                return {
+                    success: false,
+                    error: `${agentName}: Agent validation failed: ${rawValidation.errors.join(', ')}`
+                };
+            }
             const definition = {
-                name: agentName,
+                name: yamlData.name || agentName,
                 id: yamlData.id || agentName,
                 title: yamlData.title || yamlData.name || agentName,
                 icon: yamlData.icon || '🤖',
@@ -278,7 +286,18 @@ class AgentLoader {
      */
     parseCommands(commandsData) {
         const commands = {};
-        if (typeof commandsData === 'object' && commandsData !== null) {
+        if (Array.isArray(commandsData)) {
+            // Handle array format: [{ commandName: description }, ...]
+            commandsData.forEach((item) => {
+                if (typeof item === 'object' && item !== null) {
+                    for (const [name, desc] of Object.entries(item)) {
+                        commands[name] = desc;
+                    }
+                }
+            });
+        }
+        else if (typeof commandsData === 'object' && commandsData !== null) {
+            // Handle object format: { commandName: description, ... }
             for (const [name, cmdData] of Object.entries(commandsData)) {
                 if (typeof cmdData === 'string') {
                     commands[name] = cmdData;
@@ -295,6 +314,34 @@ class AgentLoader {
             }
         }
         return commands;
+    }
+    /**
+     * Validate raw YAML data before processing
+     */
+    validateRawYaml(yamlData) {
+        const errors = [];
+        const warnings = [];
+        // Required fields validation
+        if (!yamlData.name) {
+            errors.push('Agent name is required');
+        }
+        if (!yamlData.title) {
+            errors.push('Agent title is required');
+        }
+        if (!yamlData.persona?.role) {
+            errors.push('Agent persona role is required');
+        }
+        if (!yamlData.commands) {
+            errors.push('Agent commands are required');
+        }
+        if (yamlData.persona && typeof yamlData.persona === 'string') {
+            errors.push('Agent persona must be an object, not a string');
+        }
+        return {
+            isValid: errors.length === 0,
+            errors,
+            warnings
+        };
     }
     /**
      * Validate an agent definition

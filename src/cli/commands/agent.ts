@@ -20,14 +20,14 @@ function categorizeAgent(agent: ParsedAgent): string {
 
 // Helper function to format agent display
 function formatAgentDisplay(agent: ParsedAgent, layer: string): string {
-  const icon = agent.definition.icon || '🤖';
+  const agentId = agent.definition.id;
   const name = agent.definition.name;
   const whenToUse = agent.definition.whenToUse;
   const layerBadge = layer === 'core' ? chalk.blue('[CORE]') : 
                     layer === 'org' ? chalk.yellow('[ORG]') : 
                     chalk.magenta('[CUSTOM]');
   
-  return `${icon} ${chalk.cyan(name)} ${layerBadge} - ${chalk.dim(whenToUse)}`;
+  return `${chalk.yellow(agentId)} ${chalk.cyan(name)} ${layerBadge} - ${chalk.dim(whenToUse)}`;
 }
 
 // Helper function to search agents
@@ -41,6 +41,27 @@ function searchAgents(agents: ParsedAgent[], query: string): ParsedAgent[] {
            agent.definition.persona.focus.toLowerCase().includes(lowerQuery) ||
            Object.keys(agent.definition.commands).some(cmd => cmd.toLowerCase().includes(lowerQuery));
   });
+}
+
+// Helper function to get template descriptions
+function getTemplateDescription(templateName: string): string {
+  const descriptions: { [key: string]: string } = {
+    'architecture-tmpl.yaml': 'System architecture and technical design template',
+    'brainstorming-output-tmpl.yaml': 'Structured brainstorming session output format',
+    'brownfield-architecture-tmpl.yaml': 'Architecture analysis for existing systems',
+    'brownfield-prd-tmpl.yaml': 'Product requirements for legacy system enhancements',
+    'competitor-analysis-tmpl.yaml': 'Competitive landscape and feature comparison analysis',
+    'front-end-architecture-tmpl.yaml': 'Frontend system design and component architecture',
+    'front-end-spec-tmpl.yaml': 'Frontend technical specifications and requirements',
+    'fullstack-architecture-tmpl.yaml': 'Complete application architecture template',
+    'market-research-tmpl.yaml': 'Market analysis and research findings template',
+    'prd-tmpl.yaml': 'Product Requirements Document for new features/products',
+    'project-brief-tmpl.yaml': 'High-level project overview and objectives template',
+    'qa-gate-tmpl.yaml': 'Quality assurance checkpoint and review template',
+    'story-tmpl.yaml': 'User story documentation and acceptance criteria template'
+  };
+  
+  return descriptions[templateName] || 'Template for agent workflow generation';
 }
 
 export const agentCommand = new Command('agent')
@@ -64,7 +85,96 @@ export const agentCommand = new Command('agent')
           
           if (errors.length > 0) {
             console.log(chalk.yellow('⚠️  Some agents failed to load:'));
-            errors.forEach(error => console.log(chalk.red(`   ${error}`)));
+            
+            // Group errors by failure reason
+            const errorGroups = new Map<string, string[]>();
+            
+            errors.forEach(error => {
+              // Extract agent name and reason from error message
+              // Expected format: "agentName: Agent validation failed: reason1, reason2" 
+              if (error.includes('Agent validation failed:')) {
+                const match = error.match(/^(.+?): Agent validation failed: (.+)$/);
+                if (match && match[1] && match[2]) {
+                  const agentName = match[1];
+                  const allReasons = match[2];
+                  
+                  // Split multiple reasons and process each
+                  const reasons = allReasons.split(', ');
+                  reasons.forEach(reason => {
+                    // Group similar errors
+                    let groupKey = reason;
+                    if (reason.includes('name is required')) {
+                      groupKey = 'Missing required name field';
+                    } else if (reason.includes('title is required')) {
+                      groupKey = 'Missing required title field';
+                    } else if (reason.includes('persona role is required')) {
+                      groupKey = 'Missing persona role';
+                    } else if (reason.includes('commands are required')) {
+                      groupKey = 'Missing commands field';
+                    } else if (reason.includes('persona must be an object') || reason.includes('not a string')) {
+                      groupKey = 'Invalid persona format';
+                    }
+                    
+                    if (!errorGroups.has(groupKey)) {
+                      errorGroups.set(groupKey, []);
+                    }
+                    errorGroups.get(groupKey)!.push(agentName);
+                  });
+                }
+              } else if (error.includes('Failed to load')) {
+                const nameMatch = error.match(/Failed to load (.+)$/);
+                const agentName = (nameMatch && nameMatch[1]) ? nameMatch[1] : 'unknown';
+                const reason = 'Loading error';
+                
+                if (!errorGroups.has(reason)) {
+                  errorGroups.set(reason, []);
+                }
+                errorGroups.get(reason)!.push(agentName);
+              } else {
+                // Try to extract YAML parsing errors
+                if (error.includes('YAML parsing error')) {
+                  const nameMatch = error.match(/YAML parsing error in (.+?):/);
+                  const agentName = (nameMatch && nameMatch[1]) ? nameMatch[1] : 'unknown';
+                  const reason = 'YAML parsing error';
+                  
+                  if (!errorGroups.has(reason)) {
+                    errorGroups.set(reason, []);
+                  }
+                  errorGroups.get(reason)!.push(agentName);
+                } else {
+                  // Generic error - try to extract agent name
+                  const reason = 'Parse error';
+                  let agentName = 'unknown';
+                  
+                  // Try common patterns to extract agent names
+                  const patterns = [
+                    /Error loading agent (.+?):/,
+                    /(.+?): .+/,
+                    /in (.+?):/
+                  ];
+                  
+                  for (const pattern of patterns) {
+                    const match = error.match(pattern);
+                    if (match && match[1]) {
+                      agentName = match[1];
+                      break;
+                    }
+                  }
+                  
+                  if (!errorGroups.has(reason)) {
+                    errorGroups.set(reason, []);
+                  }
+                  errorGroups.get(reason)!.push(agentName);
+                }
+              }
+            });
+            
+            // Display grouped errors
+            for (const [reason, agentNames] of errorGroups) {
+              const uniqueAgents = [...new Set(agentNames)]; // Remove duplicates
+              const agentList = uniqueAgents.join(', ');
+              console.log(chalk.red(`   Agent validation failed: ${reason} (${agentList})`));
+            }
           }
 
           if (agents.length === 0) {
@@ -229,8 +339,12 @@ export const agentCommand = new Command('agent')
             const layerBadge = template.source === 'core' ? chalk.blue('[CORE]') : 
                               template.source === 'org' ? chalk.yellow('[ORG]') : 
                               chalk.magenta('[CUSTOM]');
+            
+            // Get template description
+            const description = getTemplateDescription(template.name);
+            
             console.log(`   ${index + 1}. ${chalk.cyan(template.name)} ${layerBadge}`);
-            console.log(chalk.dim(`      ${template.path}`));
+            console.log(chalk.dim(`      ${description}`));
           });
 
           console.log(chalk.dim('\n💡 Use templates with: lcagents agent create --template <name>'));
@@ -273,21 +387,24 @@ export const agentCommand = new Command('agent')
           console.log(chalk.cyan(`   Core System: ${activeCoreSystem || 'Not detected'}`));
 
           // Suggest common missing capabilities
-          const commonRoles = ['Product Manager', 'Developer', 'QA Engineer', 'Architect', 'Security Engineer'];
+          const commonRoles = ['Product Manager', 'Developer', 'Security Engineer'];
           const missingRoles = commonRoles.filter(role => {
             const roleLower = role.toLowerCase();
             return !Array.from(roles).some(existingRole => {
               const existingLower = existingRole.toLowerCase();
-              if (roleLower.includes('product manager')) {
-                return existingLower.includes('product') || existingLower.includes('pm');
+              
+              // Simple matching - check if role keywords exist
+              if (roleLower.includes('product')) {
+                return existingLower.includes('product');
               }
               if (roleLower.includes('developer')) {
-                return existingLower.includes('developer') || existingLower.includes('engineer') && existingLower.includes('software');
+                return existingLower.includes('developer') || existingLower.includes('dev');
               }
-              if (roleLower.includes('qa engineer')) {
-                return existingLower.includes('test') || existingLower.includes('quality') || existingLower.includes('qa');
+              if (roleLower.includes('security')) {
+                return existingLower.includes('security');
               }
-              return existingLower.includes(roleLower);
+              
+              return false;
             });
           });
 
@@ -484,13 +601,13 @@ async function showAgentInfo(agentName: string, basePath: string): Promise<void>
   console.log(chalk.cyan('\n⚡ Commands:'));
   const commands = Object.entries(def.commands);
   if (commands.length > 0) {
-    commands.forEach(([cmd, desc]) => {
+    commands.forEach(([cmd, desc], index) => {
       if (typeof desc === 'string') {
-        console.log(chalk.dim(`   ${cmd} - ${desc}`));
+        console.log(chalk.dim(`   ${index + 1}- ${cmd} - ${desc}`));
       } else {
-        console.log(chalk.dim(`   ${cmd} - ${desc.description}`));
+        console.log(chalk.dim(`   ${index + 1}- ${cmd} - ${desc.description}`));
         if (desc.usage) {
-          console.log(chalk.dim(`     Usage: ${desc.usage}`));
+          console.log(chalk.dim(`      Usage: ${desc.usage}`));
         }
       }
     });
