@@ -54,6 +54,8 @@ program.addCommand(uninstallModule.uninstallCommand);
 program.addCommand(core_1.coreCommand);
 program.addCommand(resource_1.resourceCommand);
 program.addCommand(agent_1.agentCommand);
+program.addCommand(agent_1.commandCommand);
+program.addCommand(agent_1.resCommand);
 // Add additional commands for development
 program
     .command('validate')

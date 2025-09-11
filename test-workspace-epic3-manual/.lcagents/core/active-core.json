@@ -1,0 +1,28 @@
+{
+  "activeCore": "bmad-core",
+  "availableCores": [
+    {
+      "name": "bmad-core",
+      "version": "4.45.0",
+      "description": "Original BMAD-Core agent system with proven workflows",
+      "agentCount": 11,
+      "installDate": "2025-09-11T14:04:01.234Z",
+      "source": {
+        "type": "bundled",
+        "path": ".bmad-core"
+      },
+      "isActive": true,
+      "installPath": "/Users/jmani/LC/AI/dev/lca/test-workspace-epic3-manual/.lcagents/core/.bmad-core"
+    }
+  ],
+  "switchHistory": [
+    {
+      "from": "",
+      "to": "bmad-core",
+      "timestamp": "2025-09-11T14:04:01.242Z",
+      "success": true,
+      "reason": "Initial installation"
+    }
+  ],
+  "lastUpdated": "2025-09-11T14:04:01.242Z"
+}

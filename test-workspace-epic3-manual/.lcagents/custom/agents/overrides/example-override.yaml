@@ -1,0 +1,30 @@
+# Example Pod-specific Agent Override
+# This file demonstrates how to customize agents for this specific pod
+# Place this file in .lcagents/custom/agents/overrides/{agent-name}.yaml
+
+agentOverrides:
+  dev:
+    # Pod-specific context and instructions
+    customContext:
+      - "This is a React-based web application"
+      - "Use TypeScript for all new code"
+      - "Follow the project's ESLint configuration"
+      - "API endpoints are documented in docs/api.md"
+    
+    # Pod-specific tools and preferences
+    toolPreferences:
+      - "Visual Studio Code with specific extensions"
+      - "Jest for unit testing"
+      - "Cypress for integration testing"
+    
+    # Pod-specific coding standards
+    codingStandards:
+      - "Use functional components with hooks"
+      - "Prefer async/await over promises"
+      - "Use CSS modules for styling"
+
+# Pod-specific configuration
+podSpecificConfig:
+  projectName: "example-web-app"
+  techStack: ["React", "TypeScript", "Node.js"]
+  testingStrategy: "unit-and-integration"

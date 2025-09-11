@@ -68,7 +68,7 @@ dependencies:
     const configPath = path.join(lcagentsDir, 'config.json');
     await fs.writeJson(configPath, config);
 
-    agentLoader = new AgentLoader(testDir, config);
+    agentLoader = new AgentLoader(testDir);
   });
 
   afterEach(async () => {
