@@ -36,11 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AgentLoader = void 0;
 const path = __importStar(require("path"));
 const yaml = __importStar(require("yaml"));
-const ResourceResolver_1 = require("./ResourceResolver");
+const LayerManager_1 = require("./LayerManager");
 class AgentLoader {
-    constructor(basePath, config) {
+    constructor(basePath) {
         this.loadedAgents = new Map();
-        this.resourceResolver = new ResourceResolver_1.ResourceResolver(basePath, config);
+        this.layerManager = new LayerManager_1.LayerManager(basePath);
     }
     /**
      * Load a specific agent by name
@@ -55,16 +55,31 @@ class AgentLoader {
                     agent: cachedAgent
                 };
             }
-            // Resolve agent file
-            const agentResult = await this.resourceResolver.resolveResource('agents', `${agentName}.yaml`);
-            if (!agentResult.found || !agentResult.content) {
+            // Resolve agent file - try both .yaml and .md extensions
+            let agentContent = null;
+            let agentPath = null;
+            // Try .yaml extension first
+            agentContent = await this.layerManager.readResource('agents', `${agentName}.yaml`);
+            if (agentContent) {
+                agentPath = await this.layerManager.getResourcePath('agents', `${agentName}.yaml`);
+            }
+            else {
+                // Try .md extension
+                agentContent = await this.layerManager.readResource('agents', `${agentName}.md`);
+                if (agentContent) {
+                    agentPath = await this.layerManager.getResourcePath('agents', `${agentName}.md`);
+                }
+            }
+            if (!agentContent || !agentPath) {
                 return {
                     success: false,
-                    error: `Agent not found: ${agentName}`
+                    error: `Agent not found: ${agentName} (tried .yaml and .md)`
                 };
             }
-            // Parse YAML content
-            const parseResult = this.parseAgentYaml(agentResult.content, agentName, agentResult.path || '');
+            // Parse agent content (YAML or Markdown with YAML front-matter)
+            const parseResult = agentPath.endsWith('.md')
+                ? this.parseAgentMarkdown(agentContent, agentName, agentPath)
+                : this.parseAgentYaml(agentContent, agentName, agentPath);
             if (!parseResult.success) {
                 return parseResult;
             }
@@ -97,9 +112,10 @@ class AgentLoader {
         const loaded = [];
         const errors = [];
         try {
-            const agentFiles = await this.resourceResolver.listResources('agents');
-            for (const fileName of agentFiles) {
-                if (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) {
+            const agentResources = await this.layerManager.listResources('agents');
+            for (const resource of agentResources) {
+                const fileName = resource.name;
+                if (fileName.endsWith('.yaml') || fileName.endsWith('.yml') || fileName.endsWith('.md')) {
                     const agentName = path.basename(fileName, path.extname(fileName));
                     const result = await this.loadAgent(agentName);
                     if (result.success && result.agent) {
@@ -172,6 +188,88 @@ class AgentLoader {
             return {
                 success: false,
                 error: `YAML parsing error in ${agentName}: ${error}`
+            };
+        }
+    }
+    /**
+     * Parse agent Markdown content with YAML front-matter into ParsedAgent
+     */
+    parseAgentMarkdown(content, agentName, filePath) {
+        try {
+            // Extract YAML block from markdown content
+            let yamlContent = '';
+            // Look for YAML block marked with ```yaml
+            const yamlBlockMatch = content.match(/```yaml\n([\s\S]*?)\n```/);
+            if (yamlBlockMatch && yamlBlockMatch[1]) {
+                yamlContent = yamlBlockMatch[1];
+            }
+            else {
+                // Try front-matter style (between --- markers)
+                const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+                if (frontMatterMatch && frontMatterMatch[1]) {
+                    yamlContent = frontMatterMatch[1];
+                }
+                else {
+                    return {
+                        success: false,
+                        error: `No YAML block found in Markdown agent: ${agentName}`
+                    };
+                }
+            }
+            // Parse the extracted YAML content
+            const yamlData = yaml.parse(yamlContent);
+            if (!yamlData || typeof yamlData !== 'object') {
+                return {
+                    success: false,
+                    error: `Invalid YAML structure in Markdown agent: ${agentName}`
+                };
+            }
+            // Use agent field if it exists, otherwise use root level
+            const agentData = yamlData.agent || yamlData;
+            const definition = {
+                name: agentData.name || agentName,
+                id: agentData.id || agentName,
+                title: agentData.title || agentData.name || agentName,
+                icon: agentData.icon || '🤖',
+                whenToUse: agentData.whenToUse || agentData['when-to-use'] || agentData.description || '',
+                customization: agentData.customization || null,
+                persona: {
+                    role: yamlData.persona?.role || '',
+                    style: yamlData.persona?.style || 'professional',
+                    identity: yamlData.persona?.identity || '',
+                    focus: yamlData.persona?.focus || '',
+                    core_principles: yamlData.persona?.core_principles || yamlData.persona?.['core-principles'] || []
+                },
+                commands: this.parseCommands(yamlData.commands || {}),
+                dependencies: {
+                    checklists: yamlData.dependencies?.checklists || [],
+                    data: yamlData.dependencies?.data || [],
+                    tasks: yamlData.dependencies?.tasks || [],
+                    templates: yamlData.dependencies?.templates || [],
+                    utils: yamlData.dependencies?.utils || [],
+                    workflows: yamlData.dependencies?.workflows || [],
+                    'agent-teams': yamlData.dependencies?.['agent-teams'] || []
+                },
+                'activation-instructions': yamlData['activation-instructions'] || [],
+                'story-file-permissions': yamlData['story-file-permissions'] || [],
+                'help-display-template': yamlData['help-display-template'] || ''
+            };
+            const parsedAgent = {
+                definition,
+                content,
+                filePath,
+                isValid: true,
+                errors: []
+            };
+            return {
+                success: true,
+                agent: parsedAgent
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                error: `Markdown parsing error in ${agentName}: ${error}`
             };
         }
     }

@@ -5,6 +5,7 @@ import * as initModule from './commands/init';
 import * as uninstallModule from './commands/uninstall';
 import { coreCommand } from './commands/core';
 import { resourceCommand } from './commands/resource';
+import { agentCommand } from './commands/agent';
 import { loadRepositoryConfig } from '../utils/repository-config';
 
 // Load repository configuration
@@ -22,6 +23,7 @@ program.addCommand(initModule.initCommand);
 program.addCommand(uninstallModule.uninstallCommand);
 program.addCommand(coreCommand);
 program.addCommand(resourceCommand);
+program.addCommand(agentCommand);
 
 // Add additional commands for development
 program

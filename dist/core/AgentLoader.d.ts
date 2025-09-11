@@ -1,14 +1,13 @@
 import { ParsedAgent } from '../types/AgentDefinition';
-import { LCAgentsConfig } from '../types/Config';
 export interface AgentLoadResult {
     success: boolean;
     agent?: ParsedAgent;
     error?: string;
 }
 export declare class AgentLoader {
-    private resourceResolver;
+    private layerManager;
     private loadedAgents;
-    constructor(basePath: string, config: LCAgentsConfig);
+    constructor(basePath: string);
     /**
      * Load a specific agent by name
      */
@@ -24,6 +23,10 @@ export declare class AgentLoader {
      * Parse agent YAML content into ParsedAgent
      */
     private parseAgentYaml;
+    /**
+     * Parse agent Markdown content with YAML front-matter into ParsedAgent
+     */
+    private parseAgentMarkdown;
     /**
      * Parse commands from YAML data
      */

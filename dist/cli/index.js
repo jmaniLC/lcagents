@@ -39,6 +39,7 @@ const initModule = __importStar(require("./commands/init"));
 const uninstallModule = __importStar(require("./commands/uninstall"));
 const core_1 = require("./commands/core");
 const resource_1 = require("./commands/resource");
+const agent_1 = require("./commands/agent");
 const repository_config_1 = require("../utils/repository-config");
 // Load repository configuration
 const repoConfig = (0, repository_config_1.loadRepositoryConfig)();
@@ -52,6 +53,7 @@ program.addCommand(initModule.initCommand);
 program.addCommand(uninstallModule.uninstallCommand);
 program.addCommand(core_1.coreCommand);
 program.addCommand(resource_1.resourceCommand);
+program.addCommand(agent_1.agentCommand);
 // Add additional commands for development
 program
     .command('validate')
