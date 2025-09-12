@@ -144,6 +144,75 @@ export const resCommand = new Command('res')
 // )
   
   .addCommand(
+    new Command('search')
+      .description('Search resources by keywords or content across all types')
+      .argument('<query>', 'Search query for resource names or content')
+      .action(async (query: string) => {
+        try {
+          console.log(chalk.blue(`🔍 Searching resources for: "${query}"`));
+          
+          const currentDir = process.cwd();
+          const layerManager = new LayerManager(currentDir);
+          
+          // Search all resources
+          const searchResults = await searchResources(query, layerManager);
+
+          if (searchResults.length === 0) {
+            console.log(chalk.yellow(`📭 No resources found matching "${query}"`));
+            console.log(chalk.dim('\n💡 Try:'));
+            console.log(chalk.dim('   • Different keywords'));
+            console.log(chalk.dim('   • Broader search terms'));
+            console.log(chalk.dim('   • Check "lcagents res list" for available resources'));
+            return;
+          }
+
+          console.log(chalk.green(`\n📋 Search Results (${searchResults.length} found):`));
+
+          // Auto-trigger detailed info if single result
+          if (searchResults.length === 1) {
+            const resource = searchResults[0];
+            if (resource) {
+              console.log(`\n${formatResourceDisplay(resource)}`);
+              console.log(chalk.dim('\n🔍 Showing detailed information (single result):\n'));
+              
+              // Show detailed info inline
+              await getResourceInfo(resource.name.replace(/\.(md|yaml|yml)$/, ''), currentDir);
+              return;
+            }
+          }
+
+          // Show search results grouped by type
+          const resultsByType = new Map<string, ResourceSearchResult[]>();
+          searchResults.forEach(result => {
+            if (!resultsByType.has(result.type)) {
+              resultsByType.set(result.type, []);
+            }
+            resultsByType.get(result.type)!.push(result);
+          });
+
+          let index = 1;
+          resultsByType.forEach((results, type) => {
+            const typeIcon = getResourceTypeIcon(type);
+            console.log(`\n${typeIcon} ${type.toUpperCase()} (${results.length} results):`);
+            
+            results.forEach(result => {
+              console.log(`   ${index}. ${formatResourceDisplay(result)}`);
+              if (result.content) {
+                console.log(chalk.dim(`      Content preview: ${result.content}`));
+              }
+              index++;
+            });
+          });
+
+          console.log(chalk.dim('\n💡 Use "lcagents res info <name>" for detailed information'));
+        } catch (error) {
+          console.error(chalk.red(`❌ Error searching resources: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          process.exit(1);
+        }
+      })
+  )
+  
+  .addCommand(
     new Command('list')
       .description('Layer-aware resource listing with AgentLoader.loadAllAgents() integration (Epic 4)')
       .argument('[type]', 'Resource type to filter by')
@@ -304,6 +373,99 @@ function askQuestion(rl: readline.Interface, question: string): Promise<string> 
       resolve(answer.trim());
     });
   });
+}
+
+// Helper function to search resources
+interface ResourceSearchResult {
+  name: string;
+  path: string;
+  source: string;
+  type: string;
+  content?: string;
+}
+
+// Helper function to format resource display
+function formatResourceDisplay(resource: ResourceSearchResult): string {
+  const typeIcon = getResourceTypeIcon(resource.type);
+  const layerBadge = resource.source === 'core' ? chalk.blue('[CORE]') : 
+                    resource.source === 'org' ? chalk.yellow('[ORG]') : 
+                    chalk.magenta('[CUSTOM]');
+  
+  return `${typeIcon} ${chalk.cyan(resource.name)} ${layerBadge}`;
+}
+
+// Helper function to extract contextual snippet around a match
+function extractContextualSnippet(content: string, query: string, maxMatches: number = 5): string {
+  const lines = content.split('\n');
+  const lowerQuery = query.toLowerCase();
+  const matches: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line && line.toLowerCase().includes(lowerQuery)) {
+      matches.push(`>>> ${line}`);
+      if (matches.length >= maxMatches) break;
+    }
+  }
+
+  if (matches.length === 0) {
+    // No match found, return first few lines as fallback
+    return lines.slice(0, Math.min(maxMatches, lines.length)).join('\n');
+  }
+
+  return matches.join('\n');
+}
+
+async function searchResources(query: string, layerManager: LayerManager): Promise<ResourceSearchResult[]> {
+  const lowerQuery = query.toLowerCase();
+  const resourceTypes = ['checklists', 'templates', 'data', 'tasks', 'workflows', 'utils', 'agents'];
+  const searchResults: ResourceSearchResult[] = [];
+  
+  for (const type of resourceTypes) {
+    try {
+      const resources = await layerManager.listResources(type);
+      
+      for (const resource of resources) {
+        // Search by name
+        if (resource.name.toLowerCase().includes(lowerQuery)) {
+          searchResults.push({
+            name: resource.name,
+            path: resource.path,
+            source: resource.source,
+            type: type
+          });
+          continue;
+        }
+        
+        // Search by content if it's a readable file
+        try {
+          if (resource.name.endsWith('.md') || resource.name.endsWith('.yaml') || resource.name.endsWith('.yml')) {
+            const content = await layerManager.readResource(type, resource.name);
+            if (content && content.toLowerCase().includes(lowerQuery)) {
+              searchResults.push({
+                name: resource.name,
+                path: resource.path,
+                source: resource.source,
+                type: type,
+                content: extractContextualSnippet(content, query, 3) // Use contextual snippet with 3 lines before/after
+              });
+            }
+          }
+        } catch (error) {
+          // Skip content search if file can't be read
+        }
+      }
+    } catch (error) {
+      // Skip type if it fails to load
+    }
+  }
+  
+  // Remove duplicates (in case a resource matches both name and content)
+  const uniqueResults = searchResults.filter((result, index, self) => 
+    index === self.findIndex(r => r.name === result.name && r.type === result.type)
+  );
+  
+  return uniqueResults;
 }
 
 /**
