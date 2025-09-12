@@ -6,6 +6,7 @@ import * as uninstallModule from './commands/uninstall';
 import { coreCommand } from './commands/core';
 import { resCommand } from './commands/resource';
 import { agentCommand } from './commands/agent';
+import { moveCommand, backupCommand, revertCommand } from './commands/setup-utils';
 import { loadRepositoryConfig } from '../utils/repository-config';
 
 // Load repository configuration
@@ -31,6 +32,11 @@ const setupCommand = new Command('setup')
 setupCommand.addCommand(initModule.initCommand);
 setupCommand.addCommand(uninstallModule.uninstallCommand);
 setupCommand.addCommand(coreCommand);
+
+// Add globalized utility commands to setup group
+setupCommand.addCommand(moveCommand);
+setupCommand.addCommand(backupCommand);
+setupCommand.addCommand(revertCommand);
 
 // Add about subcommand to setup group
 setupCommand

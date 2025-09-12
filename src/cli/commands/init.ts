@@ -9,6 +9,7 @@ import { CoreSystemManager } from '../../core/CoreSystemManager';
 import { LayerManager } from '../../core/LayerManager';
 import { RuntimeConfigManager } from '../../core/RuntimeConfigManager';
 import { GitHubCopilotManager } from '../../core/GitHubCopilotManager';
+import { MetadataGenerator } from '../../core/MetadataGenerator';
 import { InstallationOptions, InstallationResult } from '../../types/CoreSystem';
 import { analyzeTechStack, generateTechStackReport, TechStackData, selectPod } from '../../utils/techStacker';
 
@@ -629,6 +630,16 @@ async function performLayeredInstallation(
         fallback: coreSystemName
       }
     });
+
+    // Step 8: Generate resource metadata
+    spinner.text = 'Generating resource metadata...';
+    try {
+      await MetadataGenerator.generateForInstallation(basePath);
+      console.log(chalk.gray('\n✓ Resource metadata generated for creation wizards and validation'));
+    } catch (metadataError) {
+      console.log(chalk.yellow('\n⚠️  Metadata generation failed (non-critical):'), 
+                  metadataError instanceof Error ? metadataError.message : String(metadataError));
+    }
 
     spinner.succeed('Installation completed successfully!');
 

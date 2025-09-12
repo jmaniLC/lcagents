@@ -174,21 +174,7 @@ export const resCommand = new Command('res')
       })
   )
   
-  .addCommand(
-    new Command('move')
-      .description('Safe resource movement with conflict detection using AgentLoader patterns (Epic 4)')
-      .argument('<resource>', 'Resource to move (type/name or just name)')
-      .argument('<target-layer>', 'Target layer (custom, org)')
-      .action(async (resource: string, targetLayer: string) => {
-        try {
-          const currentDir = process.cwd();
-          await moveResource(resource, targetLayer, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error moving resource: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+  // NOTE: 'move' command has been moved to "lcagents setup move" for global agent/resource operations
   
 // FUTURE IMPLEMENTATION: Validate resource uniqueness across all layers
 // .addCommand(
@@ -668,24 +654,7 @@ function getResourceTypeIcon(type: string): string {
   return icons[type] || '📄';
 }
 
-/**
- * Move resource between layers (Epic 4)
- */
-async function moveResource(resource: string, targetLayer: string, _basePath: string): Promise<void> {
-  console.log(chalk.blue(`🚚 Moving Resource: ${resource} → ${targetLayer}\n`));
-  
-  const validLayers = ['custom', 'org'];
-  
-  if (!validLayers.includes(targetLayer)) {
-    console.log(chalk.red(`❌ Invalid target layer: ${targetLayer}`));
-    console.log(chalk.yellow(`💡 Valid layers: ${validLayers.join(', ')}`));
-    return;
-  }
-  
-  console.log(chalk.yellow('⚠️  Resource movement is not yet implemented'));
-  console.log(chalk.dim('This feature will be available in a future update'));
-  console.log(chalk.dim('For now, manually copy resources between layer directories'));
-}
+// NOTE: moveResource function has been moved to setup-utils.ts for global agent/resource operations
 
 /**
  * Create extension resource (Epic 4)

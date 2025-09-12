@@ -534,36 +534,7 @@ export const agentCommand = new Command('agent')
       })
   )
 
-  .addCommand(
-    new Command('backup')
-      .description('Create explicit backup before modification with validation')
-      .argument('<agent-id>', 'ID of the agent to backup')
-      .action(async (agentId: string) => {
-        try {
-          const currentDir = process.cwd();
-          await backupAgent(agentId, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error backing up agent: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
-
-  .addCommand(
-    new Command('revert')
-      .description('Safe reversion with backup preservation and error grouping')
-      .argument('<agent-id>', 'ID of the agent to revert')
-      .argument('[version]', 'Specific backup version to revert to (optional)')
-      .action(async (agentId: string, version?: string) => {
-        try {
-          const currentDir = process.cwd();
-          await revertAgent(agentId, currentDir, version);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error reverting agent: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+  // NOTE: 'backup' and 'revert' commands have been moved to "lcagents setup backup/revert" for global agent/resource operations
 
   // Epic 3: Command Management - Story 3.2: Command Management
   .addCommand(
@@ -1493,136 +1464,7 @@ async function editAgentConfig(agentId: string, basePath: string): Promise<void>
   }
 }
 
-/**
- * Create agent backup (Epic 3, Story 3.1)
- */
-async function backupAgent(agentId: string, basePath: string): Promise<void> {
-  console.log(chalk.blue(`💾 Creating Agent Backup: ${agentId}`));
-  
-  const agentLoader = new AgentLoader(basePath);
-  const layerManager = new LayerManager(basePath);
-  const coreSystemManager = new CoreSystemManager(basePath);
-  
-  // Load agent
-  const result = await agentLoader.loadAgent(agentId);
-  if (!result.success || !result.agent) {
-    console.log(chalk.red(`❌ Agent not found: ${agentId}`));
-    return;
-  }
-  
-  // Determine agent layer
-  const resolutionPath = await layerManager.resolveAgent(agentId);
-  console.log(chalk.blue(`🔍 Agent layer analysis: ${resolutionPath.layerSources.join(' → ')}`));
-  
-  // Validate modification permissions
-  const activeCoreSystem = await coreSystemManager.getActiveCoreSystem();
-  console.log(chalk.green(`✅ Core system compatibility: ${activeCoreSystem}`));
-  
-  // Create backup
-  const backupLocation = await createAgentBackup(agentId, layerManager, result.agent);
-  
-  console.log(chalk.green('✅ Backup created successfully!'));
-  console.log(chalk.dim(`📁 Location: ${backupLocation}`));
-  console.log(chalk.dim(`🔍 Restore: lcagents agent revert ${agentId}`));
-}
-
-/**
- * Agent reversion with backup management (Epic 3, Story 3.1)
- */
-async function revertAgent(agentId: string, basePath: string, version?: string): Promise<void> {
-  console.log(chalk.blue(`⏪ Reverting Agent: ${agentId}`));
-  
-  const layerManager = new LayerManager(basePath);
-  
-  // Load backup history
-  const backups = await loadBackupHistory(agentId, layerManager);
-  
-  if (backups.length === 0) {
-    console.log(chalk.yellow(`⚠️  No backups found for agent: ${agentId}`));
-    console.log(chalk.dim('💡 Use "lcagents agent backup <agent-id>" to create backups'));
-    return;
-  }
-  
-  console.log(chalk.cyan(`\n📦 Available backups for ${agentId}:`));
-  backups.forEach((backup, index) => {
-    const isLatest = index === 0;
-    const versionMarker = isLatest ? chalk.green('(LATEST)') : '';
-    const selectedMarker = version && backup.version === version ? chalk.yellow('→') : ' ';
-    console.log(`  ${selectedMarker} ${chalk.cyan((index + 1).toString())}. ${backup.version} ${versionMarker} - ${chalk.dim(backup.created)}`);
-  });
-  
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  try {
-    // We already checked that backups.length > 0, so backups[0] is guaranteed to exist
-    let selectedBackup = backups[0]; // Default to latest
-    
-    if (version) {
-      const found = backups.find(b => b.version === version);
-      if (!found) {
-        console.log(chalk.red(`❌ Backup version not found: ${version}`));
-        return;
-      }
-      selectedBackup = found;
-      console.log(chalk.yellow(`\n✅ Using specified version: ${version}`));
-    } else if (backups.length > 1) {
-      console.log(chalk.cyan('\n📋 Select backup to restore:'));
-      console.log(chalk.dim('   Enter the number of the backup you want to restore to'));
-      console.log(chalk.dim('   Press Enter without typing to use the latest backup'));
-      
-      const choice = await askQuestion(rl, `\n? Select backup (1-${backups.length}) or press Enter for latest: `);
-      
-      if (choice.trim() === '') {
-        // Use latest (default)
-        selectedBackup = backups[0];
-        console.log(chalk.green('✅ Using latest backup'));
-      } else {
-        const index = parseInt(choice) - 1;
-        if (index >= 0 && index < backups.length) {
-          const backup = backups[index];
-          if (backup) {
-            selectedBackup = backup;
-            console.log(chalk.green(`✅ Selected backup ${index + 1}: ${selectedBackup.version}`));
-          }
-        } else {
-          console.log(chalk.red(`❌ Invalid selection. Using latest backup instead.`));
-          selectedBackup = backups[0];
-        }
-      }
-    } else {
-      console.log(chalk.green('\n✅ Only one backup available, using it automatically'));
-    }
-    
-    // Analyze revert impact
-    console.log(chalk.blue('\n🔍 Analyzing revert impact...'));
-    console.log(chalk.green(`✅ Backup validation complete`));
-    console.log(chalk.green(`✅ Dependencies compatible`));
-    
-    // Confirm reversion
-    if (selectedBackup) {
-      console.log(chalk.yellow(`\n⚠️  This will restore agent to state: ${selectedBackup.version}`));
-      const confirm = await askQuestion(rl, '? Proceed with revert? (y/N): ');
-      
-      if (confirm.toLowerCase() !== 'y' && confirm.toLowerCase() !== 'yes') {
-        console.log(chalk.yellow('❌ Revert cancelled'));
-        return;
-      }
-      
-      // Perform revert
-      await restoreFromBackup(selectedBackup, layerManager);
-      
-      console.log(chalk.green('\n✅ Agent reverted successfully!'));
-      console.log(chalk.blue('\n🧪 Post-revert validation...'));
-      await validateAgent(agentId, basePath);
-    }
-    
-  } finally {
-    rl.close();
-  }
-}
+// NOTE: backupAgent and revertAgent functions have been moved to setup-utils.ts for global agent/resource operations
 
 /**
  * Add resources to agents (Epic 3, Story 3.3)
@@ -1899,51 +1741,7 @@ async function createAgentBackup(
   return backupPath;
 }
 
-interface AgentBackup {
-  version: string;
-  created: string;
-  path: string;
-}
-
-async function loadBackupHistory(agentId: string, layerManager: LayerManager): Promise<AgentBackup[]> {
-  const lcagentsPath = (layerManager as any).lcagentsPath;
-  const backupDir = path.join(lcagentsPath, 'custom', 'backups', agentId);
-  
-  if (!await fs.pathExists(backupDir)) {
-    return [];
-  }
-  
-  const files = await fs.readdir(backupDir);
-  const backups: AgentBackup[] = [];
-  
-  for (const file of files) {
-    if (file.endsWith('.yaml')) {
-      const filePath = path.join(backupDir, file);
-      const stats = await fs.stat(filePath);
-      const version = file.replace('.yaml', '');
-      
-      backups.push({
-        version,
-        created: stats.birthtime.toLocaleString(),
-        path: filePath
-      });
-    }
-  }
-  
-  // Sort by creation time (newest first)
-  return backups.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
-}
-
-async function restoreFromBackup(
-  backup: AgentBackup,
-  layerManager: LayerManager
-): Promise<void> {
-  const backupContent = await fs.readFile(backup.path, 'utf-8');
-  const agentDefinition = yaml.parse(backupContent) as AgentDefinition;
-  
-  await saveAgentToCustomLayer(agentDefinition, layerManager);
-  console.log(chalk.green(`✅ Restored from backup: ${backup.version}`));
-}
+// NOTE: loadBackupHistory and restoreFromBackup functions have been moved to setup-utils.ts for global operations
 
 async function saveAgentToCustomLayer(
   agentDefinition: AgentDefinition,

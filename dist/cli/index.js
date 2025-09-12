@@ -40,6 +40,7 @@ const uninstallModule = __importStar(require("./commands/uninstall"));
 const core_1 = require("./commands/core");
 const resource_1 = require("./commands/resource");
 const agent_1 = require("./commands/agent");
+const setup_utils_1 = require("./commands/setup-utils");
 const repository_config_1 = require("../utils/repository-config");
 // Load repository configuration
 const repoConfig = (0, repository_config_1.loadRepositoryConfig)();
@@ -59,6 +60,10 @@ const setupCommand = new commander_1.Command('setup')
 setupCommand.addCommand(initModule.initCommand);
 setupCommand.addCommand(uninstallModule.uninstallCommand);
 setupCommand.addCommand(core_1.coreCommand);
+// Add globalized utility commands to setup group
+setupCommand.addCommand(setup_utils_1.moveCommand);
+setupCommand.addCommand(setup_utils_1.backupCommand);
+setupCommand.addCommand(setup_utils_1.revertCommand);
 // Add about subcommand to setup group
 setupCommand
     .command('about')

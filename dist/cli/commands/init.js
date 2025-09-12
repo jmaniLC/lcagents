@@ -53,6 +53,7 @@ const CoreSystemManager_1 = require("../../core/CoreSystemManager");
 const LayerManager_1 = require("../../core/LayerManager");
 const RuntimeConfigManager_1 = require("../../core/RuntimeConfigManager");
 const GitHubCopilotManager_1 = require("../../core/GitHubCopilotManager");
+const MetadataGenerator_1 = require("../../core/MetadataGenerator");
 const techStacker_1 = require("../../utils/techStacker");
 /**
  * Ask user for installation directory
@@ -587,6 +588,15 @@ async function performLayeredInstallation(basePath, options, coreSystemManager, 
                 fallback: coreSystemName
             }
         });
+        // Step 8: Generate resource metadata
+        spinner.text = 'Generating resource metadata...';
+        try {
+            await MetadataGenerator_1.MetadataGenerator.generateForInstallation(basePath);
+            console.log(chalk_1.default.gray('\n✓ Resource metadata generated for creation wizards and validation'));
+        }
+        catch (metadataError) {
+            console.log(chalk_1.default.yellow('\n⚠️  Metadata generation failed (non-critical):'), metadataError instanceof Error ? metadataError.message : String(metadataError));
+        }
         spinner.succeed('Installation completed successfully!');
         return {
             success: true,
