@@ -27,118 +27,121 @@ export const resCommand = new Command('res')
       })
   )
   
-  .addCommand(
-    new Command('kb')
-      .description('Knowledge base management commands (Epic 4, Story 4.2)')
-      .option('--import <file>', 'Import from existing documentation')
-      .argument('[name]', 'Knowledge base name')
-      .action(async (name?: string, options?: { import?: string }) => {
-        try {
-          const currentDir = process.cwd();
-          if (name) {
-            const importOptions = options?.import ? { import: options.import } : {};
-            await createResource('data', name, currentDir, importOptions);
-          } else {
-            console.log(chalk.blue('📚 Knowledge Base Management'));
-            console.log(chalk.dim('Usage: lcagents res kb <name> [--import <file>]'));
-            console.log(chalk.dim('       lcagents res create data <name> --import <file>'));
-          }
-        } catch (error) {
-          console.error(chalk.red(`❌ Error with knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// FUTURE IMPLEMENTATION: Knowledge base management commands (Epic 4, Story 4.2)
+// .addCommand(
+//   new Command('kb')
+//     .description('Knowledge base management commands (Epic 4, Story 4.2)')
+//     .option('--import <file>', 'Import from existing documentation')
+//     .argument('[name]', 'Knowledge base name')
+//     .action(async (name?: string, options?: { import?: string }) => {
+//       try {
+//         const currentDir = process.cwd();
+//         if (name) {
+//           const importOptions = options?.import ? { import: options.import } : {};
+//           await createResource('data', name, currentDir, importOptions);
+//         } else {
+//           console.log(chalk.blue('📚 Knowledge Base Management'));
+//           console.log(chalk.dim('Usage: lcagents res kb <name> [--import <file>]'));
+//           console.log(chalk.dim('       lcagents res create data <name> --import <file>'));
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`❌ Error with knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('task')
-      .description('Task workflow commands (Epic 4, Story 4.3)')
-      .argument('[subcommand]', 'Subcommand: create, validate, clone')
-      .argument('[name]', 'Task name')
-      .action(async (subcommand?: string, name?: string) => {
-        try {
-          const currentDir = process.cwd();
-          
-          if (!subcommand) {
-            console.log(chalk.blue('⚙️ Task Workflow Commands'));
-            console.log(chalk.dim('Usage: lcagents res task create <name>'));
-            console.log(chalk.dim('       lcagents res task validate <name>'));
-            console.log(chalk.dim('       lcagents res task clone <existing> <new-name>'));
-            return;
-          }
-          
-          switch (subcommand) {
-            case 'create':
-              if (name) {
-                await createResource('tasks', name, currentDir, {});
-              } else {
-                console.log(chalk.red('❌ Task name required'));
-              }
-              break;
-            case 'validate':
-              if (name) {
-                await getResourceInfo(name, currentDir, 'tasks');
-              } else {
-                console.log(chalk.red('❌ Task name required'));
-              }
-              break;
-            case 'clone':
-              console.log(chalk.yellow('⚠️  Task cloning not yet implemented'));
-              break;
-            default:
-              console.log(chalk.red(`❌ Unknown subcommand: ${subcommand}`));
-          }
-        } catch (error) {
-          console.error(chalk.red(`❌ Error with task: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// FUTURE IMPLEMENTATION: Task workflow commands (Epic 4, Story 4.3)
+// .addCommand(
+//   new Command('task')
+//     .description('Task workflow commands (Epic 4, Story 4.3)')
+//     .argument('[subcommand]', 'Subcommand: create, validate, clone')
+//     .argument('[name]', 'Task name')
+//     .action(async (subcommand?: string, name?: string) => {
+//       try {
+//         const currentDir = process.cwd();
+        
+//         if (!subcommand) {
+//           console.log(chalk.blue('⚙️ Task Workflow Commands'));
+//           console.log(chalk.dim('Usage: lcagents res task create <name>'));
+//           console.log(chalk.dim('       lcagents res task validate <name>'));
+//           console.log(chalk.dim('       lcagents res task clone <existing> <new-name>'));
+//           return;
+//         }
+        
+//         switch (subcommand) {
+//           case 'create':
+//             if (name) {
+//               await createResource('tasks', name, currentDir, {});
+//             } else {
+//               console.log(chalk.red('❌ Task name required'));
+//             }
+//             break;
+//           case 'validate':
+//             if (name) {
+//               await getResourceInfo(name, currentDir, 'tasks');
+//             } else {
+//               console.log(chalk.red('❌ Task name required'));
+//             }
+//             break;
+//           case 'clone':
+//             console.log(chalk.yellow('⚠️  Task cloning not yet implemented'));
+//             break;
+//           default:
+//             console.log(chalk.red(`❌ Unknown subcommand: ${subcommand}`));
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`❌ Error with task: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('workflow')
-      .description('Multi-agent workflow commands (Epic 4, Story 4.4)')
-      .argument('[subcommand]', 'Subcommand: create, validate, clone')
-      .argument('[name]', 'Workflow name')
-      .action(async (subcommand?: string, name?: string) => {
-        try {
-          const currentDir = process.cwd();
-          
-          if (!subcommand) {
-            console.log(chalk.blue('🔄 Multi-Agent Workflow Commands'));
-            console.log(chalk.dim('Usage: lcagents res workflow create <name>'));
-            console.log(chalk.dim('       lcagents res workflow validate <name>'));
-            console.log(chalk.dim('       lcagents res workflow clone <existing> <new-name>'));
-            return;
-          }
-          
-          switch (subcommand) {
-            case 'create':
-              if (name) {
-                await createResource('workflows', name, currentDir, {});
-              } else {
-                console.log(chalk.red('❌ Workflow name required'));
-              }
-              break;
-            case 'validate':
-              if (name) {
-                await getResourceInfo(name, currentDir, 'workflows');
-              } else {
-                console.log(chalk.red('❌ Workflow name required'));
-              }
-              break;
-            case 'clone':
-              console.log(chalk.yellow('⚠️  Workflow cloning not yet implemented'));
-              break;
-            default:
-              console.log(chalk.red(`❌ Unknown subcommand: ${subcommand}`));
-          }
-        } catch (error) {
-          console.error(chalk.red(`❌ Error with workflow: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// FUTURE IMPLEMENTATION: Multi-agent workflow commands (Epic 4, Story 4.4)
+// .addCommand(
+//   new Command('workflow')
+//     .description('Multi-agent workflow commands (Epic 4, Story 4.4)')
+//     .argument('[subcommand]', 'Subcommand: create, validate, clone')
+//     .argument('[name]', 'Workflow name')
+//     .action(async (subcommand?: string, name?: string) => {
+//       try {
+//         const currentDir = process.cwd();
+        
+//         if (!subcommand) {
+//           console.log(chalk.blue('🔄 Multi-Agent Workflow Commands'));
+//           console.log(chalk.dim('Usage: lcagents res workflow create <name>'));
+//           console.log(chalk.dim('       lcagents res workflow validate <name>'));
+//           console.log(chalk.dim('       lcagents res workflow clone <existing> <new-name>'));
+//           return;
+//         }
+        
+//         switch (subcommand) {
+//           case 'create':
+//             if (name) {
+//               await createResource('workflows', name, currentDir, {});
+//             } else {
+//               console.log(chalk.red('❌ Workflow name required'));
+//             }
+//             break;
+//           case 'validate':
+//             if (name) {
+//               await getResourceInfo(name, currentDir, 'workflows');
+//             } else {
+//               console.log(chalk.red('❌ Workflow name required'));
+//             }
+//             break;
+//           case 'clone':
+//             console.log(chalk.yellow('⚠️  Workflow cloning not yet implemented'));
+//             break;
+//           default:
+//             console.log(chalk.red(`❌ Unknown subcommand: ${subcommand}`));
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`❌ Error with workflow: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
   .addCommand(
     new Command('list')
@@ -158,13 +161,12 @@ export const resCommand = new Command('res')
   
   .addCommand(
     new Command('info')
-      .description('Detailed resource info with enhanced error grouping and numbered sequences (Epic 4)')
+      .description('Show detailed information about a specific resource')
       .argument('<resource-name>', 'Name of the resource to get info about')
-      .option('--type <type>', 'Resource type to search in')
-      .action(async (resourceName: string, options: { type?: string }) => {
+      .action(async (resourceName: string) => {
         try {
           const currentDir = process.cwd();
-          await getResourceInfo(resourceName, currentDir, options.type);
+          await getResourceInfo(resourceName, currentDir);
         } catch (error) {
           console.error(chalk.red(`❌ Error getting resource info: ${error instanceof Error ? error.message : 'Unknown error'}`));
           process.exit(1);
@@ -188,118 +190,123 @@ export const resCommand = new Command('res')
       })
   )
   
-  .addCommand(
-    new Command('validate')
-      .description('Validate resource uniqueness across all layers with enhanced reporting')
-      .argument('<resource-type>', 'Type of resource to validate (templates, checklists, data, etc.)')
-      .action(async (resourceType: string) => {
-        try {
-          const currentDir = process.cwd();
-          await validateResourceType(resourceType, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error validating resources: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// FUTURE IMPLEMENTATION: Validate resource uniqueness across all layers
+// .addCommand(
+//   new Command('validate')
+//     .description('Validate resource uniqueness across all layers with enhanced reporting')
+//     .argument('<resource-type>', 'Type of resource to validate (templates, checklists, data, etc.)')
+//     .action(async (resourceType: string) => {
+//       try {
+//         const currentDir = process.cwd();
+//         await validateResourceType(resourceType, currentDir);
+//       } catch (error) {
+//         console.error(chalk.red(`❌ Error validating resources: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('suggest-name')
-      .description('Suggest unique names for new resources using AgentLoader patterns')
-      .argument('<resource-type>', 'Type of resource (templates, checklists, data, etc.)')
-      .argument('<base-name>', 'Base name for the resource')
-      .action(async (resourceType: string, baseName: string) => {
-        try {
-          const currentDir = process.cwd();
-          await suggestResourceName(resourceType, baseName, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error suggesting resource name: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// FUTURE IMPLEMENTATION: Suggest unique names for new resources
+// .addCommand(
+//   new Command('suggest-name')
+//     .description('Suggest unique names for new resources using AgentLoader patterns')
+//     .argument('<resource-type>', 'Type of resource (templates, checklists, data, etc.)')
+//     .argument('<base-name>', 'Base name for the resource')
+//     .action(async (resourceType: string, baseName: string) => {
+//       try {
+//         const currentDir = process.cwd();
+//         await suggestResourceName(resourceType, baseName, currentDir);
+//       } catch (error) {
+//         console.error(chalk.red(`❌ Error suggesting resource name: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('get')
-      .description('Get the physical path of a resource')
-      .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
-      .argument('<name>', 'Resource name (with extension)')
-      .action(async (type: string, name: string) => {
-        try {
-          const currentDir = process.cwd();
-          const layerManager = new LayerManager(currentDir);
+// INTERNAL USE ONLY: Get the physical path of a resource (used by AgentLoader)
+// .addCommand(
+//   new Command('get')
+//     .description('Get the physical path of a resource')
+//     .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
+//     .argument('<name>', 'Resource name (with extension)')
+//     .action(async (type: string, name: string) => {
+//       try {
+//         const currentDir = process.cwd();
+//         const layerManager = new LayerManager(currentDir);
+        
+//         const resourcePath = await layerManager.getResourcePath(type, name);
+        
+//         if (resourcePath) {
+//           console.log(chalk.green(`✅ Resource found:`));
+//           console.log(chalk.cyan(`   Path: ${resourcePath}`));
           
-          const resourcePath = await layerManager.getResourcePath(type, name);
-          
-          if (resourcePath) {
-            console.log(chalk.green(`✅ Resource found:`));
-            console.log(chalk.cyan(`   Path: ${resourcePath}`));
-            
-            // Show which layer it's from
-            const relativePath = path.relative(path.join(currentDir, '.lcagents'), resourcePath);
-            const layer = relativePath.split(path.sep)[0];
-            console.log(chalk.yellow(`   Layer: ${layer}`));
-          } else {
-            console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
-          }
-        } catch (error) {
-          console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+//           // Show which layer it's from
+//           const relativePath = path.relative(path.join(currentDir, '.lcagents'), resourcePath);
+//           const layer = relativePath.split(path.sep)[0];
+//           console.log(chalk.yellow(`   Layer: ${layer}`));
+//         } else {
+//           console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('read')
-      .description('Read the content of a resource')
-      .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
-      .argument('<name>', 'Resource name (with extension)')
-      .action(async (type: string, name: string) => {
-        try {
-          const currentDir = process.cwd();
-          const layerManager = new LayerManager(currentDir);
-          
-          const content = await layerManager.readResource(type, name);
-          
-          if (content) {
-            console.log(chalk.green(`✅ Resource content:`));
-            console.log(chalk.cyan(`--- ${type}/${name} ---`));
-            console.log(content);
-          } else {
-            console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
-          }
-        } catch (error) {
-          console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+// MERGED WITH INFO COMMAND: Read the content of a resource
+// .addCommand(
+//   new Command('read')
+//     .description('Read the content of a resource')
+//     .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
+//     .argument('<name>', 'Resource name (with extension)')
+//     .action(async (type: string, name: string) => {
+//       try {
+//         const currentDir = process.cwd();
+//         const layerManager = new LayerManager(currentDir);
+        
+//         const content = await layerManager.readResource(type, name);
+        
+//         if (content) {
+//           console.log(chalk.green(`✅ Resource content:`));
+//           console.log(chalk.cyan(`--- ${type}/${name} ---`));
+//           console.log(content);
+//         } else {
+//           console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// )
   
-  .addCommand(
-    new Command('exists')
-      .description('Check if a resource exists')
-      .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
-      .argument('<name>', 'Resource name (with extension)')
-      .action(async (type: string, name: string) => {
-        try {
-          const currentDir = process.cwd();
-          const layerManager = new LayerManager(currentDir);
-          
-          const exists = await layerManager.resourceExists(type, name);
-          
-          if (exists) {
-            console.log(chalk.green(`✅ Resource exists: ${type}/${name}`));
-            process.exit(0);
-          } else {
-            console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
-            process.exit(1);
-          }
-        } catch (error) {
-          console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  );
+// INTERNAL USE ONLY: Check if a resource exists (used by AgentLoader)
+// .addCommand(
+//   new Command('exists')
+//     .description('Check if a resource exists')
+//     .argument('<type>', 'Resource type (agents, tasks, templates, etc.)')
+//     .argument('<name>', 'Resource name (with extension)')
+//     .action(async (type: string, name: string) => {
+//       try {
+//         const currentDir = process.cwd();
+//         const layerManager = new LayerManager(currentDir);
+        
+//         const exists = await layerManager.resourceExists(type, name);
+        
+//         if (exists) {
+//           console.log(chalk.green(`✅ Resource exists: ${type}/${name}`));
+//           process.exit(0);
+//         } else {
+//           console.log(chalk.red(`❌ Resource not found: ${type}/${name}`));
+//           process.exit(1);
+//         }
+//       } catch (error) {
+//         console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+//         process.exit(1);
+//       }
+//     })
+// );
 
 // Keep the old resourceCommand name for backward compatibility if needed
 export const resourceCommand = resCommand;
@@ -314,141 +321,141 @@ function askQuestion(rl: readline.Interface, question: string): Promise<string> 
 }
 
 /**
- * Validate resource type uniqueness (Epic 3, Story 3.3)
+ * FUTURE IMPLEMENTATION: Validate resource type uniqueness (Epic 3, Story 3.3)
  */
-async function validateResourceType(resourceType: string, basePath: string): Promise<void> {
-  console.log(chalk.blue(`🔍 Validating ${resourceType} resources across all layers`));
+// async function validateResourceType(resourceType: string, basePath: string): Promise<void> {
+//   console.log(chalk.blue(`🔍 Validating ${resourceType} resources across all layers`));
   
-  const layerManager = new LayerManager(basePath);
-  const validTypes = ['templates', 'checklists', 'data', 'tasks', 'utils', 'workflows', 'agent-teams'];
+//   const layerManager = new LayerManager(basePath);
+//   const validTypes = ['templates', 'checklists', 'data', 'tasks', 'utils', 'workflows', 'agent-teams'];
   
-  if (!validTypes.includes(resourceType)) {
-    console.log(chalk.red(`❌ Invalid resource type: ${resourceType}`));
-    console.log(chalk.dim(`💡 Valid types: ${validTypes.join(', ')}`));
-    return;
-  }
+//   if (!validTypes.includes(resourceType)) {
+//     console.log(chalk.red(`❌ Invalid resource type: ${resourceType}`));
+//     console.log(chalk.dim(`💡 Valid types: ${validTypes.join(', ')}`));
+//     return;
+//   }
   
-  try {
-    const resources = await layerManager.listResources(resourceType);
+//   try {
+//     const resources = await layerManager.listResources(resourceType);
     
-    if (resources.length === 0) {
-      console.log(chalk.yellow(`📭 No ${resourceType} found in any layer`));
-      return;
-    }
+//     if (resources.length === 0) {
+//       console.log(chalk.yellow(`📭 No ${resourceType} found in any layer`));
+//       return;
+//     }
     
-    // Group by layer
-    const layerGroups = new Map<string, typeof resources>();
-    resources.forEach(resource => {
-      if (!layerGroups.has(resource.source)) {
-        layerGroups.set(resource.source, []);
-      }
-      layerGroups.get(resource.source)!.push(resource);
-    });
+//     // Group by layer
+//     const layerGroups = new Map<string, typeof resources>();
+//     resources.forEach(resource => {
+//       if (!layerGroups.has(resource.source)) {
+//         layerGroups.set(resource.source, []);
+//       }
+//       layerGroups.get(resource.source)!.push(resource);
+//     });
     
-    console.log(chalk.green(`\n✅ ${resourceType} validation complete:`));
+//     console.log(chalk.green(`\n✅ ${resourceType} validation complete:`));
     
-    for (const [layer, layerResources] of layerGroups) {
-      const layerBadge = layer === 'core' ? chalk.blue('[CORE]') : 
-                         layer === 'org' ? chalk.yellow('[ORG]') : 
-                         chalk.magenta('[CUSTOM]');
+//     for (const [layer, layerResources] of layerGroups) {
+//       const layerBadge = layer === 'core' ? chalk.blue('[CORE]') : 
+//                          layer === 'org' ? chalk.yellow('[ORG]') : 
+//                          chalk.magenta('[CUSTOM]');
       
-      console.log(`\n${layerBadge} ${layer.toUpperCase()} (${layerResources.length} resources):`);
-      layerResources.forEach(resource => {
-        console.log(`   • ${resource.name}`);
-      });
-    }
+//       console.log(`\n${layerBadge} ${layer.toUpperCase()} (${layerResources.length} resources):`);
+//       layerResources.forEach(resource => {
+//         console.log(`   • ${resource.name}`);
+//       });
+//     }
     
-    // Check for naming conflicts across layers
-    const nameCount = new Map<string, number>();
-    resources.forEach(resource => {
-      const count = nameCount.get(resource.name) || 0;
-      nameCount.set(resource.name, count + 1);
-    });
+//     // Check for naming conflicts across layers
+//     const nameCount = new Map<string, number>();
+//     resources.forEach(resource => {
+//       const count = nameCount.get(resource.name) || 0;
+//       nameCount.set(resource.name, count + 1);
+//     });
     
-    const conflicts = Array.from(nameCount.entries()).filter(([_, count]) => count > 1);
-    if (conflicts.length > 0) {
-      console.log(chalk.yellow('\n⚠️  Name conflicts detected (layer precedence applies):'));
-      conflicts.forEach(([name, count]) => {
-        console.log(`   • ${name} (appears in ${count} layers)`);
-      });
-    } else {
-      console.log(chalk.green('\n✅ No naming conflicts detected'));
-    }
+//     const conflicts = Array.from(nameCount.entries()).filter(([_, count]) => count > 1);
+//     if (conflicts.length > 0) {
+//       console.log(chalk.yellow('\n⚠️  Name conflicts detected (layer precedence applies):'));
+//       conflicts.forEach(([name, count]) => {
+//         console.log(`   • ${name} (appears in ${count} layers)`);
+//       });
+//     } else {
+//       console.log(chalk.green('\n✅ No naming conflicts detected'));
+//     }
     
-  } catch (error) {
-    console.log(chalk.red(`❌ Error validating ${resourceType}: ${error}`));
-  }
-}
+//   } catch (error) {
+//     console.log(chalk.red(`❌ Error validating ${resourceType}: ${error}`));
+//   }
+// }
 
 /**
- * Suggest unique resource names (Epic 3, Story 3.3)
+ * FUTURE IMPLEMENTATION: Suggest unique resource names (Epic 3, Story 3.3)
  */
-async function suggestResourceName(resourceType: string, baseName: string, basePath: string): Promise<void> {
-  console.log(chalk.blue(`💡 Suggesting unique names for ${resourceType}: "${baseName}"`));
+// async function suggestResourceName(resourceType: string, baseName: string, basePath: string): Promise<void> {
+//   console.log(chalk.blue(`💡 Suggesting unique names for ${resourceType}: "${baseName}"`));
   
-  const layerManager = new LayerManager(basePath);
-  const validTypes = ['templates', 'checklists', 'data', 'tasks', 'utils', 'workflows', 'agent-teams'];
+//   const layerManager = new LayerManager(basePath);
+//   const validTypes = ['templates', 'checklists', 'data', 'tasks', 'utils', 'workflows', 'agent-teams'];
   
-  if (!validTypes.includes(resourceType)) {
-    console.log(chalk.red(`❌ Invalid resource type: ${resourceType}`));
-    console.log(chalk.dim(`💡 Valid types: ${validTypes.join(', ')}`));
-    return;
-  }
+//   if (!validTypes.includes(resourceType)) {
+//     console.log(chalk.red(`❌ Invalid resource type: ${resourceType}`));
+//     console.log(chalk.dim(`💡 Valid types: ${validTypes.join(', ')}`));
+//     return;
+//   }
   
-  try {
-    const existingResources = await layerManager.listResources(resourceType);
-    const existingNames = new Set(existingResources.map(r => r.name));
+//   try {
+//     const existingResources = await layerManager.listResources(resourceType);
+//     const existingNames = new Set(existingResources.map(r => r.name));
     
-    const suggestions: string[] = [];
-    const sanitizedBase = baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+//     const suggestions: string[] = [];
+//     const sanitizedBase = baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
     
-    // Strategy 1: Base name variations
-    if (!existingNames.has(sanitizedBase)) {
-      suggestions.push(sanitizedBase);
-    }
+//     // Strategy 1: Base name variations
+//     if (!existingNames.has(sanitizedBase)) {
+//       suggestions.push(sanitizedBase);
+//     }
     
-    // Strategy 2: Add prefixes
-    const prefixes = ['custom', 'new', 'enhanced', 'improved', 'v2'];
-    prefixes.forEach(prefix => {
-      const prefixedName = `${prefix}-${sanitizedBase}`;
-      if (!existingNames.has(prefixedName)) {
-        suggestions.push(prefixedName);
-      }
-    });
+//     // Strategy 2: Add prefixes
+//     const prefixes = ['custom', 'new', 'enhanced', 'improved', 'v2'];
+//     prefixes.forEach(prefix => {
+//       const prefixedName = `${prefix}-${sanitizedBase}`;
+//       if (!existingNames.has(prefixedName)) {
+//         suggestions.push(prefixedName);
+//       }
+//     });
     
-    // Strategy 3: Add suffixes  
-    const suffixes = ['template', 'v2', 'new', 'custom', 'ext'];
-    suffixes.forEach(suffix => {
-      const suffixedName = `${sanitizedBase}-${suffix}`;
-      if (!existingNames.has(suffixedName)) {
-        suggestions.push(suffixedName);
-      }
-    });
+//     // Strategy 3: Add suffixes  
+//     const suffixes = ['template', 'v2', 'new', 'custom', 'ext'];
+//     suffixes.forEach(suffix => {
+//       const suffixedName = `${sanitizedBase}-${suffix}`;
+//       if (!existingNames.has(suffixedName)) {
+//         suggestions.push(suffixedName);
+//       }
+//     });
     
-    // Strategy 4: Numbered variations
-    for (let i = 1; i <= 5; i++) {
-      const numberedName = `${sanitizedBase}-${i}`;
-      if (!existingNames.has(numberedName)) {
-        suggestions.push(numberedName);
-      }
-    }
+//     // Strategy 4: Numbered variations
+//     for (let i = 1; i <= 5; i++) {
+//       const numberedName = `${sanitizedBase}-${i}`;
+//       if (!existingNames.has(numberedName)) {
+//         suggestions.push(numberedName);
+//       }
+//     }
     
-    if (suggestions.length > 0) {
-      console.log(chalk.green('\n✅ Available resource names:'));
-      suggestions.slice(0, 5).forEach((suggestion, index) => {
-        console.log(`   ${index + 1}. ${chalk.cyan(suggestion)}`);
-      });
-    } else {
-      console.log(chalk.yellow('\n⚠️  All suggested variations are taken'));
-      console.log(chalk.dim('💡 Try a different base name or add more specific descriptors'));
-    }
+//     if (suggestions.length > 0) {
+//       console.log(chalk.green('\n✅ Available resource names:'));
+//       suggestions.slice(0, 5).forEach((suggestion, index) => {
+//         console.log(`   ${index + 1}. ${chalk.cyan(suggestion)}`);
+//       });
+//     } else {
+//       console.log(chalk.yellow('\n⚠️  All suggested variations are taken'));
+//       console.log(chalk.dim('💡 Try a different base name or add more specific descriptors'));
+//     }
     
-    console.log(chalk.dim(`\n📊 Currently ${existingNames.size} ${resourceType} exist across all layers`));
+//     console.log(chalk.dim(`\n📊 Currently ${existingNames.size} ${resourceType} exist across all layers`));
     
-  } catch (error) {
-    console.log(chalk.red(`❌ Error suggesting names: ${error}`));
-  }
-}
+//   } catch (error) {
+//     console.log(chalk.red(`❌ Error suggesting names: ${error}`));
+//   }
+// }
 
 /**
  * Create a new resource with guided wizard (Epic 4, Story 4.1-4.4)
@@ -563,20 +570,19 @@ async function listResources(type?: string, layer?: string, basePath?: string): 
 }
 
 /**
- * Get detailed resource information (Epic 4)
+ * Get detailed resource information (Epic 4) - Enhanced version similar to agent info
  */
-async function getResourceInfo(resourceName: string, basePath: string, resourceType?: string): Promise<void> {
-  console.log(chalk.blue(`🔍 Resource Information: ${resourceName}\n`));
+async function getResourceInfo(resourceName: string, basePath: string): Promise<void> {
+  console.log(chalk.blue(`🔍 Loading resource information: ${resourceName}`));
   
   const layerManager = new LayerManager(basePath);
   const resourceTypes = ['checklists', 'templates', 'data', 'tasks', 'workflows', 'utils', 'agents'];
   
-  const typesToSearch = resourceType ? [resourceType] : resourceTypes;
   let foundResource = null;
   let foundType = '';
   
   // Search for the resource across types
-  for (const type of typesToSearch) {
+  for (const type of resourceTypes) {
     try {
       const resources = await layerManager.listResources(type);
       const resource = resources.find(r => 
@@ -602,32 +608,64 @@ async function getResourceInfo(resourceName: string, basePath: string, resourceT
     return;
   }
   
-  // Display resource information
-  console.log(chalk.green(`📄 ${foundResource.name}`));
+  // Display resource header information (similar to agent info style)
+  const typeIcon = getResourceTypeIcon(foundType);
+  console.log(chalk.green(`\n${typeIcon} ${foundResource.name}`));
   console.log(chalk.dim(`Type: ${foundType}`));
-  console.log(chalk.dim(`Layer: ${foundResource.source}`));
+  
+  const layerBadge = foundResource.source === 'core' ? chalk.blue('[CORE]') : 
+                    foundResource.source === 'org' ? chalk.yellow('[ORG]') : 
+                    chalk.magenta('[CUSTOM]');
+  console.log(`Layer: ${layerBadge}`);
   console.log(chalk.dim(`Path: ${foundResource.path}`));
   
+  // Get file stats
   try {
-    // Try to read and display content preview
+    const stats = await fs.stat(foundResource.path);
+    console.log(chalk.dim(`Size: ${(stats.size / 1024).toFixed(1)} KB`));
+    console.log(chalk.dim(`Modified: ${stats.mtime.toLocaleDateString()}`));
+  } catch (error) {
+    // Skip stats if unavailable
+  }
+
+  // Display full content (merged from read command functionality)
+  try {
     const content = await layerManager.readResource(foundType, foundResource.name);
     if (content) {
-      console.log(chalk.cyan('\n📝 Content Preview:'));
-      const lines = content.split('\n');
-      const preview = lines.slice(0, 10).join('\n');
-      console.log(chalk.dim(preview));
-      if (lines.length > 10) {
-        console.log(chalk.dim(`... (${lines.length - 10} more lines)`));
-      }
+      console.log(chalk.cyan('\n📝 Content:'));
+      console.log(chalk.cyan(`--- ${foundType}/${foundResource.name} ---`));
+      console.log(content);
+    } else {
+      console.log(chalk.yellow('\n⚠️  Could not read resource content'));
     }
   } catch (error) {
-    console.log(chalk.yellow('⚠️  Could not read resource content'));
+    console.log(chalk.yellow('\n⚠️  Could not read resource content'));
+    console.log(chalk.dim(`Error: ${error}`));
   }
   
-  // Show usage information
-  console.log(chalk.cyan('\n💡 Usage:'));
-  console.log(chalk.dim(`   lcagents res read ${foundType} ${foundResource.name}`));
-  console.log(chalk.dim(`   lcagents res move ${foundResource.name} <target-layer>`));
+  // Show usage information (similar to agent info commands section)
+  console.log(chalk.cyan('\n💡 Available Actions:'));
+  console.log(chalk.dim(`   lcagents res move ${foundResource.name} <target-layer>    # Move to different layer`));
+  console.log(chalk.dim(`   lcagents res list ${foundType}                           # List all ${foundType}`));
+  if (foundResource.source !== 'core') {
+    console.log(chalk.dim(`   # Edit: ${foundResource.path}`));
+  }
+}
+
+/**
+ * Get icon for resource type
+ */
+function getResourceTypeIcon(type: string): string {
+  const icons: Record<string, string> = {
+    'agents': '🤖',
+    'checklists': '✅',
+    'templates': '📄',
+    'data': '📊',
+    'tasks': '⚙️',
+    'workflows': '🔄',
+    'utils': '🛠️'
+  };
+  return icons[type] || '📄';
 }
 
 /**

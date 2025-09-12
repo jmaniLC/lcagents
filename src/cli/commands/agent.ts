@@ -52,9 +52,9 @@ function searchAgents(agents: ParsedAgent[], query: string): ParsedAgent[] {
 export const agentCommand = new Command('agent')
   .description('Discover, explore, and manage agents in the LCAgents ecosystem')
   
-  // Story 1.1: Browse Available Agents
+  // Story 1.1: List Available Agents
   .addCommand(
-    new Command('browse')
+    new Command('list')
       .description('Interactive agent browser showing all available agents')
       .action(async () => {
         try {
@@ -219,7 +219,6 @@ export const agentCommand = new Command('agent')
           console.log(chalk.dim('\n💡 Commands:'));
           console.log(chalk.dim('   lcagents agent info <name>     - Get detailed information'));
           console.log(chalk.dim('   lcagents agent search <query>  - Search agents'));
-          console.log(chalk.dim('   lcagents agent templates       - Browse agent templates'));
           
         } catch (error) {
           console.error(chalk.red(`❌ Error browsing agents: ${error instanceof Error ? error.message : 'Unknown error'}`));
@@ -247,8 +246,7 @@ export const agentCommand = new Command('agent')
           if (searchResults.length === 0) {
             console.log(chalk.yellow(`📭 No agents found matching "${query}"`));
             console.log(chalk.dim('\n💡 Try:'));
-            console.log(chalk.dim('   lcagents agent browse          - Browse all available agents'));
-            console.log(chalk.dim('   lcagents agent suggest         - Get smart recommendations'));
+            console.log(chalk.dim('   lcagents agent list          - List all available agents'));
             return;
           }
 
@@ -297,68 +295,9 @@ export const agentCommand = new Command('agent')
       })
   )
 
-  // Story 1.1: List available agent templates
-  .addCommand(
-    new Command('templates')
-      .description('List available agent templates from all layers')
-      .action(async () => {
-        try {
-          console.log(chalk.blue('🔍 Loading agent templates...'));
-          
-          const currentDir = process.cwd();
-          const layerManager = new LayerManager(currentDir);
-          
-          // List template resources from all layers
-          const templateFiles = await layerManager.listResources('templates');
-          // Show all templates as they can be used for agent workflows
-          const agentTemplates = templateFiles;
-
-          if (agentTemplates.length === 0) {
-            console.log(chalk.yellow('📭 No agent templates found'));
-            return;
-          }
-
-          console.log(chalk.green(`\n📋 Available Agent Templates (${agentTemplates.length} found):`));
-
-          agentTemplates.forEach((template, index) => {
-            const layerBadge = template.source === 'core' ? chalk.blue('[CORE]') : 
-                              template.source === 'org' ? chalk.yellow('[ORG]') : 
-                              chalk.magenta('[CUSTOM]');
-            
-            // Extract template metadata from YAML
-            let templateInfo = '';
-            try {
-              const content = fs.readFileSync(template.path, 'utf8');
-              const parsed = yaml.parse(content);
-              
-              if (parsed?.template) {
-                const t = parsed.template;
-                const name = t.name || 'Unknown';
-                const version = t.version || 'N/A';
-                const filename = t.output?.filename || 'N/A';
-                templateInfo = `${name} v${version} → ${filename}`;
-              } else {
-                templateInfo = template.name;
-              }
-            } catch (error) {
-              templateInfo = template.name;
-            }
-            
-            console.log(`   ${index + 1}. ${chalk.cyan(template.name)} ${layerBadge}`);
-            console.log(chalk.dim(`      ${templateInfo}`));
-          });
-
-          console.log(chalk.dim('\n💡 Use templates with: lcagents agent create --template <name>'));
-          
-        } catch (error) {
-          console.error(chalk.red(`❌ Error listing templates: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
-
   // Story 1.1: Gap analysis to find missing capabilities
-  .addCommand(
+  // DEACTIVATED: gaps-analysis command (hidden from CLI menu but functionality preserved for internal use)
+  /*.addCommand(
     new Command('gaps-analysis')
       .description('Analyze current agents and suggest missing capabilities')
       .action(async () => {
@@ -414,7 +353,7 @@ export const agentCommand = new Command('agent')
             missingRoles.forEach(role => {
               console.log(chalk.dim(`   • ${role}`));
             });
-            console.log(chalk.dim('\n💡 Use "lcagents agent suggest" for personalized recommendations'));
+            console.log(chalk.dim('\n💡 Consider creating agents for missing roles'));
           } else {
             console.log(chalk.green('\n✅ Core roles well covered!'));
           }
@@ -424,10 +363,11 @@ export const agentCommand = new Command('agent')
           process.exit(1);
         }
       })
-  )
+  )*/
 
   // Story 1.1: Smart agent recommendations  
-  .addCommand(
+  // DEACTIVATED: suggest command (hidden from CLI menu but functionality preserved for internal use)
+  /*.addCommand(
     new Command('suggest')
       .description('Get intelligent agent recommendations based on current setup')
       .action(async () => {
@@ -488,58 +428,7 @@ export const agentCommand = new Command('agent')
           process.exit(1);
         }
       })
-  )
-
-  // Story 1.2: List agent resources/dependencies
-  .addCommand(
-    new Command('resources')
-      .description('Show resources and dependencies for a specific agent')
-      .argument('<agent-name>', 'Name or ID of the agent')
-      .action(async (agentName: string) => {
-        try {
-          console.log(chalk.blue(`🔍 Loading resources for agent: ${agentName}`));
-          
-          const currentDir = process.cwd();
-          const agentLoader = new AgentLoader(currentDir);
-          
-          const result = await agentLoader.loadAgent(agentName);
-          if (!result.success || !result.agent) {
-            console.log(chalk.red(`❌ Agent not found: ${agentName}`));
-            console.log(chalk.dim('💡 Use "lcagents agent browse" to see available agents'));
-            return;
-          }
-
-          const agent = result.agent;
-          const deps = agent.definition.dependencies;
-
-          console.log(chalk.green(`\n📦 Resources for ${agent.definition.name}:`));
-
-          // Show each dependency type
-          const depTypes = ['checklists', 'data', 'tasks', 'templates', 'utils', 'workflows', 'agent-teams'] as const;
-          
-          depTypes.forEach(type => {
-            const items = deps[type] || [];
-            if (items.length > 0) {
-              console.log(chalk.cyan(`\n  ${type}:`));
-              items.forEach(item => {
-                console.log(chalk.dim(`    • ${item}`));
-              });
-            }
-          });
-
-          const totalDeps = Object.values(deps).flat().length;
-          if (totalDeps === 0) {
-            console.log(chalk.dim('   No external dependencies'));
-          } else {
-            console.log(chalk.dim(`\n📊 Total dependencies: ${totalDeps}`));
-          }
-          
-        } catch (error) {
-          console.error(chalk.red(`❌ Error loading agent resources: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
-  )
+  )*/
 
   // Epic 2: Guided Agent Creation - Story 2.1: Create Agent Through Wizard
   .addCommand(
@@ -598,8 +487,8 @@ export const agentCommand = new Command('agent')
       })
   )
 
-  // Epic 2: Agent Validation
-  .addCommand(
+  // DEACTIVATED: validate command (hidden from CLI menu but functionality preserved for internal use by modify/edit-config/revert commands)
+  /*.addCommand(
     new Command('validate')
       .description('Validate agent using AgentLoader.validateAgent() with enhanced error grouping')
       .argument('<agent-name>', 'Name of the agent to validate')
@@ -612,7 +501,7 @@ export const agentCommand = new Command('agent')
           process.exit(1);
         }
       })
-  )
+  )*/
 
   // Epic 3: Agent Modification & Customization - Story 3.1: Modify Existing Agents
   .addCommand(
@@ -691,40 +580,40 @@ export const agentCommand = new Command('agent')
           process.exit(1);
         }
       })
-  );
-
-// Command validation functions for Epic 3 Story 3.2
-export const commandCommand = new Command('command')
-  .description('Command management utilities for conflict checking and validation')
-  
-  .addCommand(
-    new Command('validate')
-      .description('Check command conflicts across all agents using enhanced error grouping')
-      .argument('<command-name>', 'Name of the command to validate')
-      .action(async (commandName: string) => {
-        try {
-          const currentDir = process.cwd();
-          await validateCommand(commandName, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error validating command: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
   )
-  
+
+  // Command management utilities (moved from separate commandCommand)
   .addCommand(
-    new Command('suggest')
-      .description('Suggest command names that avoid conflicts with validation')
-      .argument('<description>', 'Description of the command functionality')
-      .action(async (description: string) => {
-        try {
-          const currentDir = process.cwd();
-          await suggestCommandNames(description, currentDir);
-        } catch (error) {
-          console.error(chalk.red(`❌ Error suggesting commands: ${error instanceof Error ? error.message : 'Unknown error'}`));
-          process.exit(1);
-        }
-      })
+    new Command('command')
+      .description('Command management utilities for conflict checking and validation')
+      .addCommand(
+        new Command('validate')
+          .description('Check command conflicts across all agents using enhanced error grouping')
+          .argument('<command-name>', 'Name of the command to validate')
+          .action(async (commandName: string) => {
+            try {
+              const currentDir = process.cwd();
+              await validateCommand(commandName, currentDir);
+            } catch (error) {
+              console.error(chalk.red(`❌ Error validating command: ${error instanceof Error ? error.message : 'Unknown error'}`));
+              process.exit(1);
+            }
+          })
+      )
+      .addCommand(
+        new Command('suggest')
+          .description('Suggest command names that avoid conflicts with validation')
+          .argument('<description>', 'Description of the command functionality')
+          .action(async (description: string) => {
+            try {
+              const currentDir = process.cwd();
+              await suggestCommandNames(description, currentDir);
+            } catch (error) {
+              console.error(chalk.red(`❌ Error suggesting commands: ${error instanceof Error ? error.message : 'Unknown error'}`));
+              process.exit(1);
+            }
+          })
+      )
   );
 
 // Epic 2: Guided Agent Creation Implementation Functions
@@ -912,7 +801,6 @@ async function createAgentWithWizard(basePath: string, validate: boolean = true)
     console.log(chalk.green(`\n✅ Agent created successfully!`));
     console.log(chalk.dim(`📁 Location: .lcagents/custom/agents/${agentId}.yaml`));
     console.log(chalk.dim(`🔍 View: lcagents agent info ${agentId}`));
-    console.log(chalk.dim(`🧪 Test: lcagents agent validate ${agentId}`));
     
   } finally {
     rl.close();
@@ -932,7 +820,7 @@ async function createAgentFromTemplate(templateName: string, basePath: string, v
   const templateResult = await layerManager.resolveTemplate(templateName);
   if (!templateResult.exists) {
     console.log(chalk.red(`❌ Template not found: ${templateName}`));
-    console.log(chalk.dim('💡 Use "lcagents agent templates" to see available templates'));
+    console.log(chalk.dim('💡 Use "lcagents res list templates" to see available templates'));
     return;
   }
   
@@ -1050,7 +938,7 @@ async function cloneAgent(existingAgent: string, basePath: string, validate: boo
   const result = await agentLoader.loadAgent(existingAgent);
   if (!result.success || !result.agent) {
     console.log(chalk.red(`❌ Source agent not found: ${existingAgent}`));
-    console.log(chalk.dim('💡 Use "lcagents agent browse" to see available agents'));
+    console.log(chalk.dim('💡 Use "lcagents agent list" to see available agents'));
     return;
   }
   
@@ -1178,8 +1066,7 @@ async function validateAgent(agentName: string, basePath: string): Promise<void>
   
   // Auto-suggest next steps
   console.log(chalk.dim('\n💡 Suggested next steps:'));
-  console.log(chalk.dim(`   lcagents agent info ${agentName}     - View detailed information`));
-  console.log(chalk.dim(`   lcagents agent resources ${agentName} - Check resource dependencies`));
+  console.log(chalk.dim(`   lcagents agent info ${agentName}     - View detailed information including dependencies`));
 }
 
 // Helper functions
@@ -1246,7 +1133,7 @@ async function showAgentInfo(agentName: string, basePath: string): Promise<void>
   const result = await agentLoader.loadAgent(agentName);
   if (!result.success || !result.agent) {
     console.log(chalk.red(`❌ Agent not found: ${agentName}`));
-    console.log(chalk.dim('💡 Use "lcagents agent browse" to see available agents'));
+    console.log(chalk.dim('💡 Use "lcagents agent list" to see available agents'));
     return;
   }
 
@@ -1323,8 +1210,8 @@ async function showAgentInfo(agentName: string, basePath: string): Promise<void>
   }
 
   console.log(chalk.dim('\n💡 Commands:'));
-  console.log(chalk.dim(`   lcagents agent resources ${agentName}  - Show all dependencies`));
-  console.log(chalk.dim('   lcagents agent browse                  - Browse all agents'));
+  console.log(chalk.dim(`   lcagents agent info ${agentName}    - Show detailed info including dependencies`));
+  console.log(chalk.dim('   lcagents agent list                  - List all agents'));
 }
 
 // Epic 3: Agent Modification & Customization Implementation Functions
@@ -1342,7 +1229,7 @@ async function modifyAgent(agentId: string, basePath: string): Promise<void> {
   const result = await agentLoader.loadAgent(agentId);
   if (!result.success || !result.agent) {
     console.log(chalk.red(`❌ Agent not found: ${agentId}`));
-    console.log(chalk.dim('💡 Use "lcagents agent browse" to see available agents'));
+    console.log(chalk.dim('💡 Use "lcagents agent list" to see available agents'));
     return;
   }
   
@@ -1658,9 +1545,10 @@ async function revertAgent(agentId: string, basePath: string, version?: string):
   
   console.log(chalk.cyan(`\n📦 Available backups for ${agentId}:`));
   backups.forEach((backup, index) => {
-    const isSelected = version ? backup.version === version : index === 0;
-    const marker = isSelected ? '→' : ' ';
-    console.log(`  ${marker} ${backup.version} (${backup.created})`);
+    const isLatest = index === 0;
+    const versionMarker = isLatest ? chalk.green('(LATEST)') : '';
+    const selectedMarker = version && backup.version === version ? chalk.yellow('→') : ' ';
+    console.log(`  ${selectedMarker} ${chalk.cyan((index + 1).toString())}. ${backup.version} ${versionMarker} - ${chalk.dim(backup.created)}`);
   });
   
   const rl = readline.createInterface({
@@ -1669,6 +1557,7 @@ async function revertAgent(agentId: string, basePath: string, version?: string):
   });
 
   try {
+    // We already checked that backups.length > 0, so backups[0] is guaranteed to exist
     let selectedBackup = backups[0]; // Default to latest
     
     if (version) {
@@ -1678,12 +1567,33 @@ async function revertAgent(agentId: string, basePath: string, version?: string):
         return;
       }
       selectedBackup = found;
+      console.log(chalk.yellow(`\n✅ Using specified version: ${version}`));
     } else if (backups.length > 1) {
-      const choice = await askQuestion(rl, '\n? Select backup to restore (1 for latest): ');
-      const index = parseInt(choice) - 1;
-      if (index >= 0 && index < backups.length) {
-        selectedBackup = backups[index];
+      console.log(chalk.cyan('\n📋 Select backup to restore:'));
+      console.log(chalk.dim('   Enter the number of the backup you want to restore to'));
+      console.log(chalk.dim('   Press Enter without typing to use the latest backup'));
+      
+      const choice = await askQuestion(rl, `\n? Select backup (1-${backups.length}) or press Enter for latest: `);
+      
+      if (choice.trim() === '') {
+        // Use latest (default)
+        selectedBackup = backups[0];
+        console.log(chalk.green('✅ Using latest backup'));
+      } else {
+        const index = parseInt(choice) - 1;
+        if (index >= 0 && index < backups.length) {
+          const backup = backups[index];
+          if (backup) {
+            selectedBackup = backup;
+            console.log(chalk.green(`✅ Selected backup ${index + 1}: ${selectedBackup.version}`));
+          }
+        } else {
+          console.log(chalk.red(`❌ Invalid selection. Using latest backup instead.`));
+          selectedBackup = backups[0];
+        }
       }
+    } else {
+      console.log(chalk.green('\n✅ Only one backup available, using it automatically'));
     }
     
     // Analyze revert impact
@@ -1822,7 +1732,7 @@ async function addResourceToAgent(resourceType: string, agentId: string, basePat
     
     console.log(chalk.green(`\n✅ ${resourceType} added successfully!`));
     console.log(chalk.dim(`📦 ${resourceName} → ${agentId}`));
-    console.log(chalk.dim(`🔍 View: lcagents agent resources ${agentId}`));
+    console.log(chalk.dim(`🔍 View: lcagents agent info ${agentId}`));
     
   } finally {
     rl.close();

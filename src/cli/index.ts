@@ -5,7 +5,7 @@ import * as initModule from './commands/init';
 import * as uninstallModule from './commands/uninstall';
 import { coreCommand } from './commands/core';
 import { resCommand } from './commands/resource';
-import { agentCommand, commandCommand } from './commands/agent';
+import { agentCommand } from './commands/agent';
 import { loadRepositoryConfig } from '../utils/repository-config';
 
 // Load repository configuration
@@ -19,47 +19,22 @@ program
   .version('1.0.0-alpha.1');
 
 // Register commands
-program.addCommand(initModule.initCommand);
-program.addCommand(uninstallModule.uninstallCommand);
-program.addCommand(coreCommand);
 program.addCommand(resCommand);
 program.addCommand(agentCommand);
-program.addCommand(commandCommand);
+// REMOVED: commandCommand - Functionality available via 'lcagents agent command'
 
-// Add additional commands for development
-program
-  .command('validate')
-  .description('Validate agent definitions and configuration')
-  .action(async () => {
-    console.log('🔍 Validating agent definitions...');
-    // TODO: Implement validation logic
-    console.log('✅ Validation completed');
-  });
+// Create setup command group
+const setupCommand = new Command('setup')
+  .description('LCAgents framework setup and configuration utilities');
 
-program
-  .command('docs')
-  .description('Generate agent documentation')
-  .option('--output <path>', 'Output path for documentation', 'docs/agents.md')
-  .option('--comprehensive', 'Generate comprehensive documentation')
-  .action(async (options) => {
-    console.log(`📚 Generating documentation to ${options.output}...`);
-    // TODO: Implement documentation generation
-    console.log('✅ Documentation generated');
-  });
+// Add subcommands to setup group
+setupCommand.addCommand(initModule.initCommand);
+setupCommand.addCommand(uninstallModule.uninstallCommand);
+setupCommand.addCommand(coreCommand);
 
-program
-  .command('analyze')
-  .description('Analyze agent system and generate reports')
-  .option('--report <path>', 'Output path for analysis report', 'analysis.md')
-  .action(async (options) => {
-    console.log(`📊 Generating analysis report to ${options.report}...`);
-    // TODO: Implement analysis logic
-    console.log('✅ Analysis completed');
-  });
-
-// Internal LendingClub specific commands
-program
-  .command('info')
+// Add about subcommand to setup group
+setupCommand
+  .command('about')
   .description('Show LendingClub internal installation information')
   .action(async () => {
     console.log('🏢 LendingClub Internal Agent System');
@@ -71,14 +46,48 @@ program
     console.log(`👤 Author: ${repoConfig.author.name}`);
   });
 
+// Register the setup command group
+program.addCommand(setupCommand);
+
+// Add additional commands for development
+// DEACTIVATED: validate command (hidden from CLI menu but functionality preserved for GitHub workflows)
+/*
 program
-  .command('update')
-  .description('Update to latest version from internal repository')
+  .command('validate')
+  .description('Validate agent definitions and configuration')
   .action(async () => {
-    console.log('🔄 Updating LCAgents from internal repository...');
-    console.log(`💡 Run: npm install -g git+${repoConfig.repository.url}`);
-    console.log('ℹ️  Auto-update coming in Phase 1B');
+    console.log('🔍 Validating agent definitions...');
+    // TODO: Implement validation logic
+    console.log('✅ Validation completed');
   });
+*/
+
+// DEACTIVATED: docs command (hidden from CLI menu but functionality preserved for GitHub workflows)
+/*
+program
+  .command('docs')
+  .description('Generate agent documentation')
+  .option('--output <path>', 'Output path for documentation', 'docs/agents.md')
+  .option('--comprehensive', 'Generate comprehensive documentation')
+  .action(async (options) => {
+    console.log(`📚 Generating documentation to ${options.output}...`);
+    // TODO: Implement documentation generation
+    console.log('✅ Documentation generated');
+  });
+*/
+
+// DEACTIVATED: analyze command (hidden from CLI menu but functionality preserved for GitHub workflows)
+/*
+program
+  .command('analyze')
+  .description('Analyze agent system and generate reports')
+  .option('--report <path>', 'Output path for analysis report', 'analysis.md')
+  .action(async (options) => {
+    console.log(`📊 Generating analysis report to ${options.report}...`);
+    // TODO: Implement analysis logic
+    console.log('✅ Analysis completed');
+  });
+*/
 
 // Parse command line arguments
 program.parse();
