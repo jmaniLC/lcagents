@@ -491,6 +491,33 @@ export const initCommand = new Command('init')
       // Step 7: Update GitHub Copilot instructions
       await updateGitHubCopilotInstructions(installPath, podInfo, techStackData);
 
+      // Customize checklist task
+      spinner.start('Customizing checklist task...');
+      try {
+        const sourceFile = path.join(result.installedPath, 'tasks', 'execute-checklist.md');
+        const destDir = path.join(lcagentsDir, 'custom', 'tasks');
+        const destFile = path.join(destDir, 'lca-execute-checklist.md');
+
+        if (await fs.pathExists(sourceFile)) {
+          await fs.ensureDir(destDir);
+          await fs.copyFile(sourceFile, destFile);
+
+          let content = await fs.readFile(destFile, 'utf-8');
+          const oldText = 'Load the appropriate checklist from .bmad-core/checklists/';
+          const newText = 'Load the appropriate checklist from .lcagents/custom/checklists/, .lcagents/org/checklists/, .bmad-core/checklists/ in right precedence order';
+          content = content.replace(oldText, newText);
+          await fs.writeFile(destFile, content, 'utf-8');
+          
+          spinner.succeed('Customized checklist task');
+        } else {
+          spinner.warn('Could not find execute-checklist.md to customize.');
+        }
+      } catch (error) {
+        spinner.fail('Failed to customize checklist task');
+        // Non-critical, so just log the error and continue
+        console.log(chalk.yellow(`  - Warning: ${error instanceof Error ? error.message : String(error)}`));
+      }
+
       console.log(chalk.green('🎉 LCAgents initialized successfully!'));
       console.log();
       

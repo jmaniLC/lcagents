@@ -93,7 +93,7 @@ export class GitHubCopilotManager {
       '',
       '### Available LCAgents',
       '',
-      'Agents are discovered dynamically from the layered architecture. Check the following directories in precedence order:',
+      'Navigate following directories to discover agents dynamically from the layered architecture and list all available agents in ghcp response, when user type command `*agent`:',
       '',
       '**Agent Discovery (Layered Precedence Order):**',
       '1. `.lcagents/custom/agents/` - Pod-specific custom agents (highest priority)',
